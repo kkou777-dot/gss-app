@@ -14,7 +14,7 @@ const SHEET_ID = process.env.SHEET_ID || 'ここにあなたのスプレッド�
 
 let serviceAccountAuth;
 try {
-    let email, key, keyId, creds;
+    let email, key, keyId;
     // Render環境 (本番環境) では環境変数から認証情報を取得します
     if (process.env.NODE_ENV === 'production') {
         if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PRIVATE_KEY_ID) {
@@ -26,7 +26,7 @@ try {
         keyId = process.env.GOOGLE_PRIVATE_KEY_ID;
     } else {
         // ローカル環境では credentials.json または credentials.json.json から読み込みます
-        creds = require('./credentials.json.json');
+        const creds = require('./credentials.json.json');
         email = creds.client_email;
         key = creds.private_key;
         keyId = creds.private_key_id;
@@ -41,7 +41,7 @@ try {
         key,
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         // Render/Node.js v22環境でのOpenSSLエラーを回避するためのオプション
-        keyId: creds ? creds.private_key_id : process.env.GOOGLE_PRIVATE_KEY_ID,
+        keyId: keyId,
         // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
         additionalClaims: { alg: 'RS256' }
     });
