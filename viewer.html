@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>体操スコアシート</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body { font-family: sans-serif; margin: 2em; }
+      h1, h3, h4 { margin-top: 0; }
+      .container { display: block; }
+      .ranking-section { border: 1px solid #ccc; border-radius: 8px; padding: 1.5em; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
+      th { background-color: #f2f2f2; }
+      .controls { display: flex; align-items: center; gap: 2em; margin-bottom: 2em; flex-wrap: wrap; }
+      .tabs { display: flex; gap: 4px; }
+      .tabs button { padding: 8px 12px; cursor: pointer; border: 1px solid #ccc; background-color: #f0f0f0; border-radius: 4px 4px 0 0; font-size: 1em;}
+      .tabs button.active { background-color: #fff; border-bottom-color: #fff; font-weight: bold; }
+      .tab-content, .event-rank-wrapper > div { display: none; }
+      .tab-content.active, .event-rank-wrapper > div.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <h1><span id="competitionName">体操スコアシート</span></h1>
+
+    <div class="controls">
+        <div class="tabs" id="classTabs">
+            <button data-class="C" class="active">Cクラス</button>
+            <button data-class="B">Bクラス</button>
+            <button data-class="A">Aクラス</button>
+        </div>
+        <div class="selector">
+            <label for="rankingTypeSelect">ランキング表示: </label>
+            <select id="rankingTypeSelect">
+                <option value="total">総合得点</option>
+                <option value="floor">床</option>
+                <option value="vault">跳馬</option>
+                <option value="bars">段違い平行棒</option>
+                <option value="beam">平均台</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- クラス別 総合得点ランキング -->
+        <div id="totalRankingSection" class="ranking-section active">
+            <div id="totalRankContent_C" class="tab-content active">
+                <h3>Cクラス 総合得点ランキング</h3>
+                <table id="classC_playersTable">
+                    <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="totalRankContent_B" class="tab-content">
+                <h3>Bクラス 総合得点ランキング</h3>
+                <table id="classB_playersTable">
+                    <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="totalRankContent_A" class="tab-content">
+                 <h3>Aクラス 総合得点ランキング</h3>
+                 <table id="classA_playersTable">
+                    <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 種目別ランキング -->
+        <div id="eventRankingSection" class="ranking-section">
+            <div id="eventRankContent_C" class="tab-content active event-rank-wrapper">
+                <div data-event="floor" class="active"><h3>Cクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="vault"><h3>Cクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="bars"><h3>Cクラス - 段違い平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="beam"><h3>Cクラス - 平均台 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div id="eventRankContent_B" class="tab-content event-rank-wrapper">
+                <div data-event="floor" class="active"><h3>Bクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="vault"><h3>Bクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="bars"><h3>Bクラス - 段違い平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="beam"><h3>Bクラス - 平均台 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+            </div>
+            <div id="eventRankContent_A" class="tab-content event-rank-wrapper">
+                <div data-event="floor" class="active"><h3>Aクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="vault"><h3>Aクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="bars"><h3>Aクラス - 段違い平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                <div data-event="beam"><h3>Aクラス - 平均台 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- サーバーと通信するためのライブラリを読み込み -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- 保護者ページ専用のJavaScriptファイルを読み込み -->
+    <script src="viewer.js"></script>
+</body>
+</html>
