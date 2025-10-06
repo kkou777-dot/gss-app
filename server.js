@@ -15,8 +15,8 @@ const SHEET_ID = process.env.SHEET_ID || '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWe
 let serviceAccountAuth;
 try {
     let creds;
-    // GOOGLE_CREDENTIALS_JSON があれば本番環境（Renderなど）と判断
-    if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    // RENDER 環境変数が 'true' なら本番環境と判断
+    if (process.env.RENDER === 'true') {
         creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
     } else {
         // なければローカルの ./credentials.json.json を参照
