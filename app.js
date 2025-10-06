@@ -209,8 +209,8 @@ function renderTotalRanking() {
         let rank = 1;
         let lastScore = -1;
         sortedPlayers.forEach((p, i) => {
-            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
-                rank = i + 1; // 前の選手とスコアが違う場合、順位を更新
+            if (i > 0 && (p.total || 0) < (sortedPlayers[i - 1].total || 0)) {
+                rank = i + 1;
             }
             lastScore = p.total;
             const tr = document.createElement('tr');
@@ -243,14 +243,13 @@ function renderEventRanking() {
             const tbody = table.querySelector('tbody');
             const sortedPlayers = appState.players
                 .filter(p => p.playerClass === classVal)
-                .filter(p => (p[eventVal] || 0) > 0) // スコアが0より大きい選手のみを対象
                 .sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
 
             tbody.innerHTML = '';
             let rank = 1;
             sortedPlayers.forEach((p, i) => {
                 // 前の選手がいて、スコアが同じでなければ、順位を更新 (i + 1)
-                if (i > 0 && p[eventVal] < sortedPlayers[i - 1][eventVal]) {
+                if (i > 0 && (p[eventVal] || 0) < (sortedPlayers[i - 1][eventVal] || 0)) {
                     rank = i + 1;
                 }
 
