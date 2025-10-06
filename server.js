@@ -41,7 +41,7 @@ try {
         });
     }
 
-    if (!SHEET_ID || SHEET_ID === 'ここにあなたのスプレッドシートIDを貼り付けてください') {
+    if (!SHEET_ID || SHEET_ID === '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWeljGtmU') {
         throw new Error('スプレッドシートIDが設定されていません。server.jsのSHEET_IDをあなたのIDに書き換えてください。');
     }
 
