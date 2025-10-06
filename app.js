@@ -1,5 +1,16 @@
 // --- DOM要素のキャッシュ ---
 const dom = {};
+
+// --- アプリケーションの状態管理 ---
+const appState = {
+    socket: null,
+    competitionName: '',
+    players: [], // { name, playerClass, playerGroup, floor, vault, bars, beam, total }
+    ui: {
+        totalRankClass: 'C',
+        eventRankClass: 'C',
+    }
+};
 function cacheDOMElements() {
     const ids = [
         'csvInput', 'csvUploadBtn', 'inputClassSelect', 'inputGroupSelect',
@@ -21,11 +32,6 @@ function cacheDOMElements() {
 
 // --- 初期化処理 ---
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
-    appState.socket = socket;
-
-    cacheDOMElements();
-    setupEventListeners();
 
     // サーバーから最新の状態を受け取る
     socket.on('stateUpdate', (newState) => {
@@ -33,6 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.players = newState.players || [];
         appState.competitionName = newState.competitionName || '';
         renderAll();
+    });
+
+    // 保存完了通知
+    socket.on('saveSuccess', (message) => {
+        dom.saveStatus.textContent = message;
+        setTimeout(() => dom.saveStatus.textContent = '', 3000);
     });
 
     // 接続時に現在の状態を要求
@@ -47,7 +59,6 @@ function setupEventListeners() {
 
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
-        saveStateToServer();
     });
     // CSV読み込み
     dom.csvUploadBtn.addEventListener('click', handleCsvUpload);
@@ -364,17 +375,9 @@ function scrollToPlayerInput(originalIndex) {
 
 // --- 初期化処理 ---
 document.addEventListener('DOMContentLoaded', () => {
-    cacheDOMElements();
     const socket = io();
     appState.socket = socket;
 
-    // サーバーから最新の状態を受け取る
-    socket.on('stateUpdate', (newState) => {
-        console.log('サーバーから状態を受信しました');
-        appState.players = newState.players || [];
-        appState.competitionName = newState.competitionName || '';
-        renderAll();
-    });
-
+    cacheDOMElements();
     setupEventListeners();
 });

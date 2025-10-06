@@ -173,15 +173,13 @@ io.on('connection', async (socket) => {
   // 接続時に現在の状態を送信
   socket.emit('stateUpdate', appState);
 
-  // 運営者からの状態更新を受け取る (非同期処理に変更)
-  socket.on('viewerUpdate', async (newState) => {
+  // 運営者からの状態更新を受け取る (閲覧者向け)
+  socket.on('viewerUpdate', (newState) => {
     // サーバー側の状態を更新 (より安全な方法)
     // 新しい状態を直接代入するのではなく、プロパティごとに更新する
     if (newState && typeof newState === 'object') {
         appState.competitionName = newState.competitionName;
         appState.players = newState.players;
-        // 自動保存を停止
-        // await saveStateToSheet();
         // 全員に新しい状態をブロードキャスト
         io.emit('stateUpdate', appState);
     }
