@@ -248,17 +248,12 @@ function renderEventRanking() {
 
             tbody.innerHTML = '';
             let rank = 1;
-            let lastScore = -1;
-            let sameRankCount = 1;
             sortedPlayers.forEach((p, i) => {
-                const currentScore = p[eventVal] || 0;
-                if (lastScore !== -1 && currentScore < lastScore) {
-                    rank += sameRankCount;
-                    sameRankCount = 1;
-                } else if (currentScore === lastScore) {
-                    sameRankCount++;
+                // 前の選手がいて、スコアが同じでなければ、順位を更新 (i + 1)
+                if (i > 0 && sortedPlayers[i][eventVal] < sortedPlayers[i - 1][eventVal]) {
+                    rank = i + 1;
                 }
-                lastScore = currentScore;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${rank}</td>`;

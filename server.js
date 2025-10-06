@@ -22,7 +22,7 @@ try {
         serviceAccountAuth = new JWT({
             email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
             // Renderの環境変数では改行が `\\n` になってしまうため、本物の改行 `\n` に戻す
-            key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
             keyId: process.env.GOOGLE_PRIVATE_KEY_ID,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
             // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
