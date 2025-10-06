@@ -129,9 +129,11 @@ async function saveStateToSheet() {
         const playersSheet = doc.sheetsByTitle['players'];
         if (playersSheet) {
             // 既存の選手データをクリア (ヘッダー行は残す)
-            await playersSheet.clearRows();
-            // 新しい選手データを一括追加
-            if (appState.players.length > 0) await playersSheet.addRows(appState.players);
+            // clearRows()は内部的に複数のAPIコールを行うため、より直接的なclear()を使用する
+            await playersSheet.clear(); 
+            // ヘッダー行を再設定
+            await playersSheet.setHeaderRow(['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total']);
+            if (appState.players.length > 0) await playersSheet.addRows(appState.players); // 新しい選手データを一括追加
         }
         console.log('State saved to Google Sheet.');
     } catch (error) {
