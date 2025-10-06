@@ -186,10 +186,14 @@ io.on('connection', async (socket) => {
   });
 
   // 運営者からの手動保存要求を受け取る
-  socket.on('saveData', async () => {
+  socket.on('saveData', async (newState) => {
     console.log('Received manual save request. Saving to sheet...');
-    await saveStateToSheet();
-    socket.emit('saveSuccess', 'データが正常に保存されました。');
+    if (newState && typeof newState === 'object') {
+        appState.competitionName = newState.competitionName;
+        appState.players = newState.players;
+        await saveStateToSheet();
+        socket.emit('saveSuccess', 'データが正常に保存されました。');
+    }
   });
 
   socket.on('disconnect', () => {

@@ -92,7 +92,12 @@ function setupEventListeners() {
     // 保存ボタン
     dom.saveButton.addEventListener('click', () => {
         dom.saveStatus.textContent = '保存中...';
-        appState.socket.emit('saveData'); // サーバーに保存を要求
+        // UIの状態は送信しない
+        const stateToSend = {
+            competitionName: appState.competitionName,
+            players: appState.players,
+        };
+        appState.socket.emit('saveData', stateToSend); // サーバーに保存を要求
     });
 
     // リアルタイムでh1タグだけ更新
