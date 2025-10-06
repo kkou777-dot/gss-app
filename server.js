@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // --- Google Sheets 設定 ---
-const SHEET_ID = process.env.SHEET_ID || 'ここにあなたのスプレッドシートIDを貼り付けてください';
+const SHEET_ID = process.env.SHEET_ID || '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWeljGtmU';
 
 let serviceAccountAuth;
 try {
@@ -68,13 +68,22 @@ async function loadStateFromSheet() {
         console.log(`Loaded Google Sheet: ${doc.title}`);
 
         // 大会名の読み込み (configシートから)
-        const configSheet = doc.sheetsByTitle['config'] || await doc.addSheet({ title: 'config', headerValues: ['key', 'value'] });
-        const configRows = await configSheet.getRows();
-        const competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
-        appState.competitionName = competitionNameRow ? competitionNameRow.get('value') : '';
+        let configSheet = doc.sheetsByTitle['config'];
+        if (!configSheet) {
+            console.log('Creating "config" sheet...');
+            configSheet = await doc.addSheet({ title: 'config', headerValues: ['key', 'value'] });
+        } else {
+            const configRows = await configSheet.getRows();
+            const competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
+            appState.competitionName = competitionNameRow ? competitionNameRow.get('value') : '';
+        }
 
         // 選手データの読み込み (playersシートから)
-        const playersSheet = doc.sheetsByTitle['players'] || await doc.addSheet({ title: 'players', headerValues: ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'] });
+        let playersSheet = doc.sheetsByTitle['players'];
+        if (!playersSheet) {
+            console.log('Creating "players" sheet...');
+            playersSheet = await doc.addSheet({ title: 'players', headerValues: ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'] });
+        }
         const playerRows = await playersSheet.getRows();
         appState.players = playerRows.map(row => ({
             name: row.get('name') || '',
@@ -96,21 +105,29 @@ async function loadStateFromSheet() {
  * 現在のappStateをスプレッドシートに保存する
  */
 async function saveStateToSheet() {
-    if (!doc.title) return; // シートが読み込まれていない場合は何もしない
+    if (!doc.title) {
+        console.log('Sheet not loaded, skipping save.');
+        return; // シートが読み込まれていない場合は何もしない
+    }
     try {
         const configSheet = doc.sheetsByTitle['config'];
-        const playersSheet = doc.sheetsByTitle['players'];
-        await playersSheet.clearRows(); // 既存の選手データをクリア
-        if (appState.players.length > 0) {
-            await playersSheet.addRows(appState.players); // 新しい選手データを一括追加
+        if (configSheet) {
+            const configRows = await configSheet.getRows();
+            let competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
+            if (competitionNameRow) {
+                competitionNameRow.set('value', appState.competitionName);
+                await competitionNameRow.save();
+            } else {
+                await configSheet.addRow({ key: 'competitionName', value: appState.competitionName });
+            }
         }
-        const configRows = await configSheet.getRows();
-        const competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
-        if (competitionNameRow) {
-            competitionNameRow.set('value', appState.competitionName);
-            await competitionNameRow.save();
-        } else {
-            await configSheet.addRow({ key: 'competitionName', value: appState.competitionName });
+
+        const playersSheet = doc.sheetsByTitle['players'];
+        if (playersSheet) {
+            // 既存の選手データをクリア (ヘッダー行は残す)
+            await playersSheet.clearRows();
+            // 新しい選手データを一括追加
+            if (appState.players.length > 0) await playersSheet.addRows(appState.players);
         }
         console.log('State saved to Google Sheet.');
     } catch (error) {
@@ -139,11 +156,15 @@ io.on('connection', async (socket) => {
 
   // 運営者からの状態更新を受け取る (非同期処理に変更)
   socket.on('stateUpdate', async (newState) => {
-    appState = newState;
-    await saveStateToSheet(); // スプレッドシートに保存
-    // 全員に新しい状態をブロードキャスト
-    io.emit('stateUpdate', appState);
-    console.log('State updated, saved to sheet, and broadcasted');
+    // サーバー側の状態を更新 (より安全な方法)
+    // 新しい状態を直接代入するのではなく、プロパティごとに更新する
+    if (newState && typeof newState === 'object') {
+        appState.competitionName = newState.competitionName;
+        appState.players = newState.players;
+        await saveStateToSheet(); // スプレッドシートに保存
+        // 全員に新しい状態をブロードキャスト
+        io.emit('stateUpdate', appState);
+    }
   });
 
   socket.on('disconnect', () => {
