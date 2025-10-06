@@ -31,27 +31,6 @@ function cacheDOMElements() {
 
 
 // --- 初期化処理 ---
-document.addEventListener('DOMContentLoaded', () => {
-
-    // サーバーから最新の状態を受け取る
-    socket.on('stateUpdate', (newState) => {
-        console.log('サーバーから状態を受信しました');
-        appState.players = newState.players || [];
-        appState.competitionName = newState.competitionName || '';
-        renderAll();
-    });
-
-    // 保存完了通知
-    socket.on('saveSuccess', (message) => {
-        dom.saveStatus.textContent = message;
-        setTimeout(() => dom.saveStatus.textContent = '', 3000);
-    });
-
-    // 接続時に現在の状態を要求
-    socket.on('connect', () => {
-        console.log('サーバーに接続しました');
-    });
-});
 
 function setupEventListeners() {
     // 印刷ボタン
@@ -59,6 +38,7 @@ function setupEventListeners() {
 
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
+        saveStateToServer(); // 閲覧者向けに更新
     });
     // CSV読み込み
     dom.csvUploadBtn.addEventListener('click', handleCsvUpload);
@@ -135,6 +115,7 @@ function handleCsvUpload() {
     reader.onload = (e) => {
         parseCSV(e.target.result);
         renderAll();
+        saveStateToServer(); // 閲覧者向けに更新
         alert(`${appState.players.length}名の選手データを読み込みました。`);
     };
     reader.readAsText(file, 'UTF-8');
@@ -180,6 +161,7 @@ function handleSubmitScores() {
     });
 
     renderAll();
+    saveStateToServer(); // 閲覧者向けに更新
     alert('点数を登録しました');
 }
 
@@ -375,9 +357,29 @@ function scrollToPlayerInput(originalIndex) {
 
 // --- 初期化処理 ---
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io();
+    const socket = io({
+        // Renderの無料プランでは、一定時間アクセスがないと接続が切れるため、
+        // 自動的に再接続するように設定します。
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+    });
     appState.socket = socket;
 
     cacheDOMElements();
     setupEventListeners();
+
+    // サーバーから最新の状態を受け取る
+    socket.on('stateUpdate', (newState) => {
+        console.log('サーバーから状態を受信しました');
+        appState.players = newState.players || [];
+        appState.competitionName = newState.competitionName || '';
+        renderAll();
+    });
+
+    // 保存完了通知
+    socket.on('saveSuccess', (message) => {
+        dom.saveStatus.textContent = message;
+        setTimeout(() => dom.saveStatus.textContent = '', 3000);
+    });
 });
