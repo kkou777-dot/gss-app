@@ -128,10 +128,20 @@ async function saveStateToSheet() {
 
         const playersSheet = doc.sheetsByTitle['players'];
         if (playersSheet) {
-            // 既存の選手データをクリア (ヘッダー行は残す) - clear()はRender環境でクラッシュするため、より安全なclearRows()を使用する
-            await playersSheet.clearRows();
-            // 新しい選手データを一括追加
-            if (appState.players.length > 0) await playersSheet.addRows(appState.players); // 新しい選手データを一括追加
+            // Render環境でのクラッシュを避けるため、clearRows() や clear() を使わず、
+            // 既存の行を直接更新する、最も安全な方法を採用します。
+            const rows = await playersSheet.getRows();
+            for (let i = 0; i < appState.players.length; i++) {
+                const playerData = appState.players[i];
+                if (rows[i]) {
+                    // 既存の行があれば、データを上書きして保存
+                    rows[i].assign(playerData);
+                    await rows[i].save();
+                } else {
+                    // 既存の行が足りなければ、新しい行として追加
+                    await playersSheet.addRow(playerData);
+                }
+            }
         }
         console.log('State saved to Google Sheet.');
     } catch (error) {
