@@ -207,12 +207,10 @@ function renderTotalRanking() {
         tbody.innerHTML = '';
         const fragment = document.createDocumentFragment();
         let rank = 1;
-        let lastScore = -1;
         sortedPlayers.forEach((p, i) => {
             if (i > 0 && (p.total || 0) < (sortedPlayers[i - 1].total || 0)) {
                 rank = i + 1;
             }
-            lastScore = p.total;
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${rank}</td>
                 <td>${p.name}</td>
