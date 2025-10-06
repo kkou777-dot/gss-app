@@ -170,8 +170,10 @@ app.get('/viewer', (req, res) => {
 io.on('connection', async (socket) => {
   console.log('a user connected');
 
-  // 接続時に現在の状態を送信
-  socket.emit('stateUpdate', appState);
+  // クライアントからの初期データ要求に応じて、現在の状態を送信する
+  socket.on('requestInitialData', () => {
+    socket.emit('stateUpdate', appState);
+  });
 
   // 運営者からの状態更新を受け取る (閲覧者向け)
   socket.on('viewerUpdate', (newState) => {
