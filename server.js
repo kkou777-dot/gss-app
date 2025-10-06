@@ -14,15 +14,22 @@ const SHEET_ID = process.env.SHEET_ID || '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWe
 
 let serviceAccountAuth;
 try {
-    // GOOGLE_APPLICATION_CREDENTIALS があれば本番環境（Renderなど）と判断
-    // なければローカルの ./credentials.json.json を参照しようとする
+    let creds;
+    // GOOGLE_CREDENTIALS_JSON があれば本番環境（Renderなど）と判断
+    if (process.env.GOOGLE_CREDENTIALS_JSON) {
+        creds = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    } else {
+        // なければローカルの ./credentials.json.json を参照
+        creds = require('./credentials.json.json');
+    }
+
+    // 取得した認証情報を使ってJWTを初期化
     serviceAccountAuth = new JWT({
-        // keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Renderではファイルパスは使えない
-        // 環境変数から直接認証情報を読み込む
-        key: process.env.GOOGLE_PRIVATE_KEY,
-        email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        email: creds.client_email,
+        key: creds.private_key,
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
+
 } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         console.error('\n\n\x1b[31m[設定エラー]\x1b[0m `credentials.json.json` が見つかりません。ローカル環境で実行する場合は、Google Cloudからダウンロードした認証情報ファイルの名前を `credentials.json.json` に変更して、`server.js` と同じフォルダに配置してください。\n\n');
