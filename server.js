@@ -21,10 +21,8 @@ try {
         }
         serviceAccountAuth = new JWT({
             email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-            // Renderの環境変数では改行が `\\n` になったり、全体が引用符で囲まれることがあるため、整形する
-            key: process.env.GOOGLE_PRIVATE_KEY
-                .replace(/^"|"$/g, '') // 先頭と末尾の引用符を削除
-                .replace(/\\n/g, "\n"), // エスケープされた改行を本物の改行に置換
+            // Base64エンコードされた秘密鍵をデコードして使用する
+            key: Buffer.from(process.env.GOOGLE_PRIVATE_KEY, 'base64').toString('utf-8'),
             keyId: process.env.GOOGLE_PRIVATE_KEY_ID,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
             // Node.js v18+ と OpenSSL 3.0 の互換性問題に対応
