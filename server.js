@@ -14,33 +14,15 @@ const SHEET_ID = process.env.SHEET_ID || '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWe
 
 let serviceAccountAuth;
 try {
-    // GOOGLE_SERVICE_ACCOUNT_EMAIL があれば本番環境（Renderなど）と判断
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
-        if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PRIVATE_KEY_ID) {
-            throw new Error('本番環境用の環境変数（GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PRIVATE_KEY_ID）が設定されていません。');
-        }
-        serviceAccountAuth = new JWT({
-            email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-            // Base64エンコードされた秘密鍵をデコードして使用する
-            key: Buffer.from(process.env.GOOGLE_PRIVATE_KEY, 'base64').toString('utf-8'),
-            keyId: process.env.GOOGLE_PRIVATE_KEY_ID,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-            // Node.js v18+ と OpenSSL 3.0 の互換性問題に対応
-            additionalClaims: { alg: 'RS256' }
-        });
-    } else {
-        // ローカル環境では credentials.json.json から読み込みます
-        const creds = require('./credentials.json.json');
-        serviceAccountAuth = new JWT({
-            email: creds.client_email,
-            key: creds.private_key,
-            keyId: creds.private_key_id,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-            // Node.js v18+ と OpenSSL 3.0 の互換性問題に対応
-            additionalClaims: { alg: 'RS256' }
-        });
-    }
-
+    // GOOGLE_APPLICATION_CREDENTIALS があれば本番環境（Renderなど）と判断
+    // なければローカルの ./credentials.json.json を参照しようとする
+    serviceAccountAuth = new JWT({
+        // keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Renderではファイルパスは使えない
+        // 環境変数から直接認証情報を読み込む
+        key: process.env.GOOGLE_PRIVATE_KEY,
+        email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
 } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         console.error('\n\n\x1b[31m[設定エラー]\x1b[0m `credentials.json.json` が見つかりません。ローカル環境で実行する場合は、Google Cloudからダウンロードした認証情報ファイルの名前を `credentials.json.json` に変更して、`server.js` と同じフォルダに配置してください。\n\n');
