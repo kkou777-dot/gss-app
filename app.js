@@ -19,6 +19,7 @@ function cacheDOMElements() {
         'competitionName',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
+        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A',
         'eventRankContent_C_floor', 'eventRankContent_C_vault', 'eventRankContent_C_bars', 'eventRankContent_C_beam',
         'eventRankContent_B_floor', 'eventRankContent_B_vault', 'eventRankContent_B_bars', 'eventRankContent_B_beam',
         'eventRankContent_A_floor', 'eventRankContent_A_vault', 'eventRankContent_A_bars', 'eventRankContent_A_beam'
