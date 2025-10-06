@@ -38,7 +38,6 @@ function setupEventListeners() {
 
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
-        saveStateToServer(); // 閲覧者向けに更新
     });
     // CSV読み込み
     dom.csvUploadBtn.addEventListener('click', handleCsvUpload);
@@ -115,7 +114,6 @@ function handleCsvUpload() {
     reader.onload = (e) => {
         parseCSV(e.target.result);
         renderAll();
-        saveStateToServer(); // 閲覧者向けに更新
         alert(`${appState.players.length}名の選手データを読み込みました。`);
     };
     reader.readAsText(file, 'UTF-8');
@@ -161,7 +159,6 @@ function handleSubmitScores() {
     });
 
     renderAll();
-    saveStateToServer(); // 閲覧者向けに更新
     alert('点数を登録しました');
 }
 
