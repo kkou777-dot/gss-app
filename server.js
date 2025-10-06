@@ -124,20 +124,31 @@ async function saveStateToSheet() {
 
         const playersSheet = doc.sheetsByTitle['players'];
         if (playersSheet) {
-            // 既存のシートを一度削除
-            await playersSheet.delete();
-        }
-        // ヘッダーを指定して新しいシートを作成
-        const newSheet = await doc.addSheet({
-            title: 'players',
-            headerValues: ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total']
-        });
-        if (appState.players.length > 0) {
-            await newSheet.addRows(appState.players, { raw: true });
+            const rows = await playersSheet.getRows();
+            const newPlayers = appState.players;
+
+            // 既存の行を更新、または新しい行を追加
+            for (let i = 0; i < newPlayers.length; i++) {
+                if (i < rows.length) {
+                    // 既存の行を更新
+                    rows[i].assign(newPlayers[i]);
+                    await rows[i].save({ raw: true });
+                } else {
+                    // 新しい行を追加
+                    await playersSheet.addRow(newPlayers[i], { raw: true });
+                }
+            }
+
+            // 新しいデータの方が少ない場合、古い余分な行を削除
+            if (newPlayers.length < rows.length) {
+                for (let i = newPlayers.length; i < rows.length; i++) {
+                    await rows[i].delete();
+                }
+            }
         }
         console.log('State saved to Google Sheet.');
     } catch (error) {
-        console.error('Error saving state to Google Sheet:', error);
+        console.error('Error saving state to Google Sheet:', error.message, error.stack);
     }
 }
 
