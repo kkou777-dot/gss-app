@@ -243,15 +243,20 @@ function renderEventRanking() {
             const tbody = table.querySelector('tbody');
             const sortedPlayers = appState.players
                 .filter(p => p.playerClass === classVal)
+                .filter(p => (p[eventVal] || 0) > 0) // スコアが0より大きい選手のみを対象
                 .sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
 
             tbody.innerHTML = '';
             let rank = 1;
             let lastScore = -1;
+            let sameRankCount = 1;
             sortedPlayers.forEach((p, i) => {
                 const currentScore = p[eventVal] || 0;
-                if (currentScore < lastScore) {
-                    rank = i + 1;
+                if (lastScore !== -1 && currentScore < lastScore) {
+                    rank += sameRankCount;
+                    sameRankCount = 1;
+                } else if (currentScore === lastScore) {
+                    sameRankCount++;
                 }
                 lastScore = currentScore;
                 const tr = document.createElement('tr');
