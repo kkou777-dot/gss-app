@@ -208,8 +208,8 @@ function renderTotalRanking() {
         let rank = 1;
         let lastScore = -1;
         sortedPlayers.forEach((p, i) => {
-            if (p.total < lastScore) {
-                rank = i + 1;
+            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
+                rank = i + 1; // 前の選手とスコアが違う場合、順位を更新
             }
             lastScore = p.total;
             const tr = document.createElement('tr');
@@ -249,7 +249,7 @@ function renderEventRanking() {
             let rank = 1;
             sortedPlayers.forEach((p, i) => {
                 // 前の選手がいて、スコアが同じでなければ、順位を更新 (i + 1)
-                if (i > 0 && sortedPlayers[i][eventVal] < sortedPlayers[i - 1][eventVal]) {
+                if (i > 0 && p[eventVal] < sortedPlayers[i - 1][eventVal]) {
                     rank = i + 1;
                 }
 
@@ -274,7 +274,7 @@ function updateTabAndContentActiveState(tabsContainer, contentIdPrefix, selected
         btn.classList.toggle('active', btn.dataset.class === selectedClass);
     });
     ['C', 'B', 'A'].forEach(cls => {
-        const contentDiv = dom[`${contentIdPrefix}_${cls}`] || (contentIdPrefix === 'eventRankContent' ? dom[`${contentIdPrefix}_${cls}_floor`]?.parentElement.parentElement : null);
+        const contentDiv = dom[`${contentIdPrefix}_${cls}`];
         if (contentDiv) contentDiv.classList.toggle('active', cls === selectedClass);
     });
 }
