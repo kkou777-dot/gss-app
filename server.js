@@ -14,7 +14,8 @@ const SHEET_ID = process.env.SHEET_ID || 'ここにあなたのスプレッド�
 
 let serviceAccountAuth;
 try {
-    if (process.env.NODE_ENV === 'production') { // --- Render環境 (本番環境) の設定 ---
+    // Render環境 (本番環境) では環境変数から認証情報を取得します
+    if (process.env.NODE_ENV === 'production') {
         if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PRIVATE_KEY_ID) {
             throw new Error('本番環境用の環境変数（GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PRIVATE_KEY_ID）が設定されていません。');
         }
@@ -22,20 +23,17 @@ try {
             email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
             // Renderの環境変数では改行が `\\n` になってしまうため、本物の改行 `\n` に戻す
             key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            keyId: process.env.GOOGLE_PRIVATE_KEY_ID,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-            // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
-            // keyIdは、Renderの新しいNode.js環境との互換性のため、ここでは指定しない
-            // additionalClaims: { alg: 'RS256' } // この行も不要になりました
         });
-    } else { // --- ローカル環境 (あなたのPC) の設定 ---
+    } else {
+        // ローカル環境では credentials.json.json から読み込みます
         const creds = require('./credentials.json.json');
         serviceAccountAuth = new JWT({
             email: creds.client_email,
             key: creds.private_key,
+            keyId: creds.private_key_id,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-            // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
-            // keyIdは、ローカル環境では不要なため指定しない
-            // additionalClaims: { alg: 'RS256' } // この行も不要になりました
         });
     }
 
