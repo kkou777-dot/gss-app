@@ -25,6 +25,8 @@ try {
             key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             keyId: process.env.GOOGLE_PRIVATE_KEY_ID,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+            // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
+            additionalClaims: { alg: 'RS256' }
         });
     } else {
         // ローカル環境では credentials.json.json から読み込みます
@@ -34,6 +36,8 @@ try {
             key: creds.private_key,
             keyId: creds.private_key_id,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+            // Node.js v18以降でOpenSSL3.0がデフォルトになったことによる互換性問題への対応
+            additionalClaims: { alg: 'RS256' }
         });
     }
 
