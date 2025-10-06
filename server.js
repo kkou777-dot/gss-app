@@ -14,8 +14,8 @@ const SHEET_ID = process.env.SHEET_ID || '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWe
 
 let serviceAccountAuth;
 try {
-    // Render環境 (本番環境) では環境変数から認証情報を取得します
-    if (process.env.NODE_ENV === 'production') {
+    // GOOGLE_SERVICE_ACCOUNT_EMAIL があれば本番環境（Renderなど）と判断
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
         if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_PRIVATE_KEY_ID) {
             throw new Error('本番環境用の環境変数（GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_PRIVATE_KEY_ID）が設定されていません。');
         }
