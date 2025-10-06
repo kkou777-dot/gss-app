@@ -237,10 +237,10 @@ function renderEventRanking() {
         if (!classContentDiv) return;
 
         ['floor', 'vault', 'bars', 'beam'].forEach(eventVal => {
-            const eventDiv = classContentDiv.querySelector(`[data-event="${eventVal}"]`);
-            if (!eventDiv) return;
+            const table = dom[`eventRankContent_${classVal}_${eventVal}`];
+            if (!table) return;
 
-            const tbody = eventDiv.querySelector('tbody');
+            const tbody = table.querySelector('tbody');
             const sortedPlayers = appState.players
                 .filter(p => p.playerClass === classVal)
                 .sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));

@@ -129,21 +129,27 @@ async function saveStateToSheet() {
         const playersSheet = doc.sheetsByTitle['players'];
         if (playersSheet) {
             // Render環境でのクラッシュを避けるため、既存の行を直接更新する、より安全な方法を採用します。
-            const rows = await playersSheet.getRows();
-
-            // 既存の行を新しいデータで上書き
-            for (let i = 0; i < rows.length; i++) {
-                if (appState.players[i]) {
-                    rows[i].assign(appState.players[i]);
-                    await rows[i].save({ raw: true }); // raw: trueで高速化
-                }
+            await playersSheet.clearRows(); // 一旦すべての行をクリア
+            if (appState.players.length > 0) {
+                // ヘッダーがクリアされないように、ヘッダーを再設定
+                await playersSheet.setHeaderRow(['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total']);
+                await playersSheet.addRows(appState.players, { raw: true });
             }
+            // const rows = await playersSheet.getRows();
 
-            // 新しいデータの方が多い場合は、新しい行として追加
-            if (appState.players.length > rows.length) {
-                const newPlayersData = appState.players.slice(rows.length);
-                await playersSheet.addRows(newPlayersData, { raw: true });
-            }
+            // // 既存の行を新しいデータで上書き
+            // for (let i = 0; i < rows.length; i++) {
+            //     if (appState.players[i]) {
+            //         rows[i].assign(appState.players[i]);
+            //         await rows[i].save({ raw: true }); // raw: trueで高速化
+            //     }
+            // }
+
+            // // 新しいデータの方が多い場合は、新しい行として追加
+            // if (appState.players.length > rows.length) {
+            //     const newPlayersData = appState.players.slice(rows.length);
+            //     await playersSheet.addRows(newPlayersData, { raw: true });
+            // }
 
             // TODO: 新しいデータの方が少ない場合、古い余分な行を削除する処理も追加可能
             // (ただし、削除処理はクラッシュのリスクがあるため、一旦は行を残す仕様とします)
