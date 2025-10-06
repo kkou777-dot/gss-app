@@ -41,10 +41,6 @@ try {
         });
     }
 
-    if (!SHEET_ID || SHEET_ID === '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWeljGtmU') {
-        throw new Error('スプレッドシートIDが設定されていません。server.jsのSHEET_IDをあなたのIDに書き換えてください。');
-    }
-
 } catch (error) {
     if (error.code === 'MODULE_NOT_FOUND') {
         console.error('\n\n\x1b[31m[設定エラー]\x1b[0m `credentials.json.json` が見つかりません。ローカル環境で実行する場合は、Google Cloudからダウンロードした認証情報ファイルの名前を `credentials.json.json` に変更して、`server.js` と同じフォルダに配置してください。\n\n');
