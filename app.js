@@ -213,11 +213,10 @@ function renderTotalRanking() {
             }
             lastScore = p.total;
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${rank}</td>`;
-            tr.appendChild(document.createElement('td')).textContent = p.name;
-            tr.appendChild(document.createElement('td')).textContent = p.playerGroup;
-            tr.innerHTML += `<td>${p.total.toFixed(3)}</td>
+            tr.innerHTML = `<td>${rank}</td>
+                <td>${p.name}</td>
+                <td>${p.playerGroup}</td>
+                <td>${p.total.toFixed(3)}</td>
                 <td><button type="button" onclick="scrollToPlayerInput(${p.originalIndex})">編集</button></td>
             `;
             fragment.appendChild(tr);
@@ -255,10 +254,9 @@ function renderEventRanking() {
                 }
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${rank}</td>`;
-                tr.appendChild(document.createElement('td')).textContent = p.name;
-                tr.innerHTML += `<td>${(p[eventVal] || 0).toFixed(3)}</td>`;
+                tr.innerHTML = `<td>${rank}</td>
+                    <td>${p.name}</td>
+                    <td>${(p[eventVal] || 0).toFixed(3)}</td>`;
                 tbody.appendChild(tr);
             });
         });
