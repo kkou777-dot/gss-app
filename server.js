@@ -174,16 +174,24 @@ io.on('connection', async (socket) => {
   socket.emit('stateUpdate', appState);
 
   // 運営者からの状態更新を受け取る (非同期処理に変更)
-  socket.on('stateUpdate', async (newState) => {
+  socket.on('viewerUpdate', async (newState) => {
     // サーバー側の状態を更新 (より安全な方法)
     // 新しい状態を直接代入するのではなく、プロパティごとに更新する
     if (newState && typeof newState === 'object') {
         appState.competitionName = newState.competitionName;
         appState.players = newState.players;
-        await saveStateToSheet(); // スプレッドシートに保存
+        // 自動保存を停止
+        // await saveStateToSheet();
         // 全員に新しい状態をブロードキャスト
         io.emit('stateUpdate', appState);
     }
+  });
+
+  // 運営者からの手動保存要求を受け取る
+  socket.on('saveData', async () => {
+    console.log('Received manual save request. Saving to sheet...');
+    await saveStateToSheet();
+    socket.emit('saveSuccess', 'データが正常に保存されました。');
   });
 
   socket.on('disconnect', () => {

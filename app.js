@@ -1,15 +1,3 @@
-// --- アプリケーションの状態管理 ---
-const appState = {
-    socket: null,
-    competitionName: '',
-    players: [], // { name, playerClass, playerGroup, floor, vault, bars, beam, total }
-    ui: {
-        totalRankClass: 'C',
-        eventRankClass: 'C',
-        eventRankEvent: 'floor',
-    }
-};
-
 // --- DOM要素のキャッシュ ---
 const dom = {};
 function cacheDOMElements() {
@@ -23,7 +11,10 @@ function cacheDOMElements() {
         'eventRankContent_C_floor', 'eventRankContent_C_vault', 'eventRankContent_C_bars', 'eventRankContent_C_beam',
         'eventRankContent_B_floor', 'eventRankContent_B_vault', 'eventRankContent_B_bars', 'eventRankContent_B_beam',
         'eventRankContent_A_floor', 'eventRankContent_A_vault', 'eventRankContent_A_bars', 'eventRankContent_A_beam'
-    ];
+    ].concat([
+        'saveButton',
+        'saveStatus'
+    ]));
     ids.forEach(id => dom[id] = document.getElementById(id));
 }
 
@@ -56,12 +47,6 @@ function setupEventListeners() {
 
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
-        saveStateToServer();
-    });
-    // リアルタイムでh1タグだけ更新
-    dom.competitionNameInput.addEventListener('input', (e) => {
-        appState.competitionName = e.target.value;
-        renderCompetitionName();
         saveStateToServer();
     });
     // CSV読み込み
@@ -114,6 +99,18 @@ function setupEventListeners() {
         }
     });
 
+    // 保存ボタン
+    dom.saveButton.addEventListener('click', () => {
+        dom.saveStatus.textContent = '保存中...';
+        appState.socket.emit('saveData'); // サーバーに保存を要求
+    });
+
+    // リアルタイムでh1タグだけ更新
+    dom.competitionNameInput.addEventListener('input', (e) => {
+        appState.competitionName = e.target.value;
+        renderCompetitionName();
+    });
+
 }
 
 // --- データ処理 ---
@@ -126,7 +123,6 @@ function handleCsvUpload() {
     const reader = new FileReader();
     reader.onload = (e) => {
         parseCSV(e.target.result);
-        saveStateToServer(); // データをサーバーに保存
         renderAll();
         alert(`${appState.players.length}名の選手データを読み込みました。`);
     };
@@ -172,7 +168,6 @@ function handleSubmitScores() {
         p.total = (p.floor || 0) + (p.vault || 0) + (p.bars || 0) + (p.beam || 0);
     });
 
-    saveStateToServer(); // データをサーバーに保存
     renderAll();
     alert('点数を登録しました');
 }
@@ -180,13 +175,13 @@ function handleSubmitScores() {
 // --- サーバーとの通信 ---
 function saveStateToServer() {
     if (!appState.socket) return;
-    console.log('サーバーに状態を送信します');
+    console.log('サーバーに状態を送信します (閲覧者向け)');
     // UIの状態は送信しない
     const stateToSend = {
         competitionName: appState.competitionName,
         players: appState.players,
     };
-    appState.socket.emit('stateUpdate', stateToSend);
+    appState.socket.emit('viewerUpdate', stateToSend);
 }
 
 // --- 描画処理 ---
@@ -366,3 +361,20 @@ function scrollToPlayerInput(originalIndex) {
         playerRow?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
+
+// --- 初期化処理 ---
+document.addEventListener('DOMContentLoaded', () => {
+    cacheDOMElements();
+    const socket = io();
+    appState.socket = socket;
+
+    // サーバーから最新の状態を受け取る
+    socket.on('stateUpdate', (newState) => {
+        console.log('サーバーから状態を受信しました');
+        appState.players = newState.players || [];
+        appState.competitionName = newState.competitionName || '';
+        renderAll();
+    });
+
+    setupEventListeners();
+});
