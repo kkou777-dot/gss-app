@@ -5,21 +5,41 @@
     <title>体操スコアシート</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-      body { font-family: sans-serif; margin: 2em; }
-      h1, h3, h4 { margin-top: 0; }
+      body {
+        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        margin: 2em;
+        background-color: #fff8fa; /* 背景をほんのりピンクに */
+        color: #5d4037; /* 文字色をダークブラウンに */
+      }
+      h1, h3, h4 {
+        margin-top: 0;
+        color: #d81b60; /* 見出しの色を濃いピンクに */
+      }
       .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2em; }
-      .input-section, .ranking-section { border: 1px solid #ccc; border-radius: 8px; padding: 1.5em; }
+      .input-section, .ranking-section {
+        border: 1px solid #f8bbd0; /* 枠線の色をピンクに */
+        border-radius: 12px; /* 角をより丸く */
+        padding: 1.5em;
+        background-color: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* 影をつけて立体感を出す */
+      }
       .input-section { grid-column: 1 / -1; } /* 入力エリアは常に全幅 */
       table { border-collapse: collapse; width: 100%; }
       th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
-      th { background-color: #f2f2f2; }
+      th { background-color: #fce4ec; } /* テーブルヘッダーの背景を薄いピンクに */
       .tabs { margin-bottom: 1em; display: flex; gap: 4px; }
-      .tabs button { padding: 8px 12px; cursor: pointer; border: 1px solid #ccc; background-color: #f0f0f0; border-radius: 4px 4px 0 0; }
-      .tabs button.active { background-color: #fff; border-bottom-color: #fff; }
+      .tabs button {
+        padding: 8px 16px;
+        cursor: pointer;
+        border: 1px solid #f8bbd0;
+        background-color: #fce4ec;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.2s ease;
+      }
+      .tabs button.active { background-color: #fff; border-bottom-color: #fff; color: #d81b60; font-weight: bold; }
       .tab-content { display: none; }
       .tab-content.active { display: block; }
       .table-wrapper { overflow-x: auto; }
-      #competitionNameInput { width: 100%; max-width: 20em; box-sizing: border-box; }
 
       .player-input-row {
         display: flex;
@@ -33,7 +53,26 @@
       .player-name { min-width: 8em; font-weight: bold; }
       .score-inputs { display: flex; flex-wrap: wrap; gap: 1em; }
       .score-inputs input { width: 5em; }
+      
+      /* ボタン共通スタイル */
+      button, input[type="file"]::file-selector-button {
+        background-color: #ec407a;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95em;
+        transition: background-color 0.2s ease;
+      }
+      button:hover, input[type="file"]::file-selector-button:hover {
+        background-color: #d81b60;
+      }
+      #saveButton { background-color: #43a047; } /* 保存ボタンは緑に */
+      #saveButton:hover { background-color: #388e3c; }
 
+      /* 入力フォームのスタイル */
+      input[type="text"], input[type="number"], select { padding: 8px; border-radius: 6px; border: 1px solid #f8bbd0; }
       @media (max-width: 768px) {
         body { margin: 1em; }
         h1 { font-size: 1.5em; }
