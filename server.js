@@ -94,6 +94,7 @@ async function loadStateFromSheet() {
  * 現在のappStateをスプレッドシートに保存する
  */
 async function saveStateToSheet() {
+    // この関数は呼び出し元でエラーを捕捉できるように、try-catchを外してエラーをスローするように変更します。
     if (!doc.title) {
         console.log('Sheet not loaded, skipping save.');
         return; // シートが読み込まれていない場合は何もしない
@@ -121,9 +122,6 @@ async function saveStateToSheet() {
             }
         }
         console.log('State saved to Google Sheet.');
-    } catch (error) {
-        console.error('Error saving state to Google Sheet:', error.message, error.stack);
-    }
 }
 
 // 静的ファイルを提供 (html, js, cssなど)
@@ -160,13 +158,26 @@ io.on('connection', async (socket) => {
   });
 
   // 運営者からの手動保存要求を受け取る
-  socket.on('saveData', async (newState) => {
-    console.log('Received manual save request. Saving to sheet...');
-    if (newState && typeof newState === 'object') {
-        appState.competitionName = newState.competitionName;
-        appState.players = newState.players;
-        await saveStateToSheet();
-        socket.emit('saveSuccess', 'データが正常に保存されました。');
+  socket.on('saveData', async (newState, callback) => {
+    console.log('クライアントからsaveDataリクエストを受信');
+    if (!newState || typeof newState !== 'object') {
+        if (typeof callback === 'function') callback({ success: false, message: '無効なデータです。' });
+        return;
+    }
+
+    // サーバー側の状態を更新
+    appState.competitionName = newState.competitionName;
+    appState.players = newState.players;
+
+    try {
+        await saveStateToSheet(); // スプレッドシートへの保存を試みる
+        io.emit('stateUpdate', appState); // 保存成功後、全クライアントに最新情報を送信
+        console.log('保存成功。全クライアントにstateUpdateを送信しました。');
+        if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
+    } catch (error) {
+        console.error('スプレッドシートへの保存中にエラーが発生しました:', error);
+        // 保存に失敗したことをリクエスト元のクライアントに通知
+        if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
     }
   });
 

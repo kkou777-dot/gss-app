@@ -37,25 +37,32 @@ function cacheDOMElements() {
 // --- データ処理 ---
 function handleCsvUpload() {
     if (!dom.csvInput.files.length) {
-        alert('CSVファイルを選択してください');
+        alert('CSVファイルを選択してください。');
         return;
     }
     const file = dom.csvInput.files[0];
     const reader = new FileReader();
+
+    reader.onerror = () => {
+        alert(`ファイルの読み込みに失敗しました: ${reader.error}`);
+        console.error('FileReader error:', reader.error);
+    };
+
     reader.onload = (e) => {
         const result = parseCSV(e.target.result);
         if (result.newPlayers.length > 0) {
             appState.players = result.newPlayers;
             renderAll();
+            saveStateToServer(); // CSV読み込み後に自動保存
         }
 
         let message = `${result.newPlayers.length}名の選手データを読み込みました。`;
         if (result.errors.length > 0) {
             message += `\n\n以下の${result.errors.length}件のエラーが見つかりました：\n`;
             message += result.errors.map(err => `- ${err.lineNumber}行目: ${err.message}`).join('\n');
-            console.error("CSVパースエラー:", result.errors);
         }
         alert(message);
+        dom.csvInput.value = ''; // ファイル選択をリセット
     };
     reader.readAsText(file, 'Shift_JIS'); // Excelで作成した日本語CSVはShift_JISが多い
 }
@@ -92,8 +99,6 @@ function parseCSV(text) {
         newPlayers.push({ name, playerClass, playerGroup, floor, vault, bars, beam, total: floor + vault + bars + beam });
     });
 
-    dom.csvInput.value = ''; // ファイル選択をリセット
-
     return { newPlayers, errors };
 }
 
@@ -114,19 +119,29 @@ function handleSubmitScores() {
     });
 
     renderAll();
+    saveStateToServer(); // スコア登録後に自動保存
     alert('点数を登録しました');
 }
 
 // --- サーバーとの通信 ---
 function saveStateToServer() {
     if (!appState.socket) return;
-    console.log('サーバーに状態を送信します (閲覧者向け)');
-    // UIの状態は送信しない
+    console.log('サーバーに状態を自動保存します');
+    dom.saveStatus.textContent = '保存中...'; // 保存中であることを表示
     const stateToSend = {
         competitionName: appState.competitionName,
         players: appState.players,
     };
-    appState.socket.emit('viewerUpdate', stateToSend);
+    // 'saveData'イベントでサーバーにデータを送信し、コールバックで結果を受け取る
+    appState.socket.emit('saveData', stateToSend, (response) => {
+        if (response && response.success) {
+            dom.saveStatus.textContent = response.message || '自動保存しました';
+            setTimeout(() => dom.saveStatus.textContent = '', 3000);
+        } else {
+            dom.saveStatus.textContent = (response && response.message) || '自動保存に失敗しました';
+            // エラーメッセージは消さない
+        }
+    });
 }
 
 // --- 描画処理 ---
@@ -312,6 +327,7 @@ function setupEventListeners() {
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
         // 自動保存は行わない
+        saveStateToServer(); // 変更が確定したら自動保存
     });
     // CSV読み込み
     dom.csvUploadBtn.addEventListener('click', handleCsvUpload);
@@ -371,7 +387,11 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const socket = io({
+    // Renderサーバーに接続するために、io()の第一引数にサーバーのURLを指定します。
+    // ご自身のRenderアプリケーションのURLに書き換えてください。
+    // 例: 'https://your-app-name.onrender.com'
+    // ※Renderの管理画面(dashboard.render.com)のURLではないのでご注意ください。
+    const socket = io('https://gymnastics-score-app.onrender.com', {
         // Renderの無料プランでは、一定時間アクセスがないと接続が切れるため、
         // 自動的に再接続するように設定します。
         reconnection: true,
@@ -401,7 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     competitionName: appState.competitionName,
                     players: appState.players,
                 };
-                appState.socket.emit('saveData', stateToSend);
+                // 自動保存と同じ関数を呼び出す
+                saveStateToServer();
             });
             dom.saveButton.dataset.listenerAttached = 'true';
         }
@@ -411,8 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 保存完了通知
     socket.on('saveSuccess', (message) => {
-        dom.saveStatus.textContent = message;
-        setTimeout(() => dom.saveStatus.textContent = '', 3000);
+        // 保存結果の通知は'saveData'のコールバックで行うため、このリスナーは不要になります。
+        // 意図しない動作を防ぐためにコメントアウトまたは削除します。
+        console.log('手動保存が成功しました:', message);
     });
 
     // サーバーに接続が確立した時の処理
