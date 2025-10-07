@@ -124,11 +124,13 @@ function handleSubmitScores() {
 }
 
 // --- サーバーとの通信 ---
-function saveStateToServer() {
+function saveStateToServer(data) {
     if (!appState.socket) return;
     console.log('サーバーに状態を自動保存します');
     dom.saveStatus.textContent = '保存中...'; // 保存中であることを表示
-    const stateToSend = {
+
+    // 引数でデータが渡されなかった場合は、現在のappStateを使用する（自動保存用）
+    const stateToSend = data || {
         competitionName: appState.competitionName,
         players: appState.players,
     };
@@ -416,13 +418,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // データ受信後に初めて保存ボタンの機能を有効化する
         if (!dom.saveButton.dataset.listenerAttached) {
             dom.saveButton.addEventListener('click', () => {
-                dom.saveStatus.textContent = '保存中...';
                 const stateToSend = {
                     competitionName: appState.competitionName,
                     players: appState.players,
                 };
-                // 自動保存と同じ関数を呼び出す
-                saveStateToServer();
+                // 自動保存と同じ関数を呼び出すが、引数で最新の状態を渡す
+                saveStateToServer(stateToSend);
             });
             dom.saveButton.dataset.listenerAttached = 'true';
         }
