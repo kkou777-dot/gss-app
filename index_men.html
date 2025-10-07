@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>体操スコアシート (男子)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+        margin: 2em;
+        background-color: #f0f8ff; /* 背景をほんのり青に */
+        color: #37474f; /* 文字色をダークブルーグレーに */
+      }
+      h1, h3, h4 {
+        margin-top: 0;
+        color: #1565c0; /* 見出しの色を濃い青に */
+      }
+      .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2em; }
+      .input-section, .ranking-section {
+        border: 1px solid #90caf9; /* 枠線の色を青に */
+        border-radius: 12px;
+        padding: 1.5em;
+        background-color: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      }
+      .input-section { grid-column: 1 / -1; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
+      th { background-color: #e3f2fd; } /* テーブルヘッダーの背景を薄い青に */
+      tbody tr:nth-child(even) { background-color: #f0f8ff; }
+      .tabs { margin-bottom: 1em; display: flex; gap: 4px; }
+      .tabs button {
+        padding: 8px 16px; cursor: pointer; border: 1px solid #90caf9; background-color: #e3f2fd; border-radius: 8px 8px 0 0; transition: all 0.2s ease;
+      }
+      .tabs button.active { background-color: #fff; border-bottom-color: #fff; color: #1565c0; font-weight: bold; }
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+      .table-wrapper { overflow-x: auto; }
+      .player-input-row { display: flex; align-items: center; gap: 1em; margin-bottom: 1em; padding-bottom: 1em; border-bottom: 1px solid #eee; flex-wrap: wrap; }
+      .player-name { min-width: 8em; font-weight: bold; }
+      .score-inputs { display: flex; flex-wrap: wrap; gap: 1em; }
+      .score-inputs input { width: 5em; }
+      button, input[type="file"]::file-selector-button {
+        background-color: #1976d2; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: background-color 0.2s ease;
+      }
+      button:hover, input[type="file"]::file-selector-button:hover { background-color: #1565c0; }
+      #saveButton { background-color: #43a047; }
+      #saveButton:hover { background-color: #388e3c; }
+      input[type="text"], input[type="number"], select { padding: 8px; border-radius: 6px; border: 1px solid #90caf9; }
+      @media (max-width: 768px) {
+        body { margin: 1em; }
+        h1 { font-size: 1.5em; }
+        .input-section, .ranking-section { padding: 1em; }
+        .container { grid-template-columns: 1fr; }
+        .player-input-row { flex-direction: column; align-items: flex-start; gap: 0.5em; }
+        .score-inputs { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em 1em; border: 1px solid #ccc; padding: 0.75em; border-radius: 4px; background-color: #f9f9f9; }
+        .score-inputs input { width: 100%; box-sizing: border-box; }
+      }
+      .event-selector { margin-bottom: 1em; }
+      #print-container { display: none; }
+      @media print {
+        .input-section, #printBtn, .save-container, h1, #connectionStatus, .container { display: none !important; }
+        body { margin: 0; }
+        #print-container { display: block !important; }
+        .print-page { page-break-after: always; }
+        .print-page:last-child { page-break-after: avoid; }
+        table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+        th { background-color: #f2f2f2; }
+      }
+    </style>
+</head>
+<body>
+    <h1><span id="competitionName">体操スコアシート (男子)</span></h1>
+    <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
+    <div class="save-container" style="margin-bottom: 1em;">
+        <button id="saveButton">スプレッドシートに保存</button>
+        <span id="saveStatus" style="margin-left: 1em; color: green;"></span>
+    </div>
+    <button type="button" id="printBtn">このページを印刷する</button>
+    <div class="input-section">
+        <h3>データ入力</h3>
+        <div style="margin-bottom:1em;">
+            <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
+        </div>
+        <hr style="margin: 1.5em 0;">
+        <div style="margin-bottom:1em;">
+            <label>CSVファイルから一括登録: <input type="file" id="csvInput" accept=".csv"></label>
+            <button id="csvUploadBtn">CSV読み込み</button>
+        </div>
+        <hr style="margin: 1.5em 0;">
+        <div style="display:flex; align-items:center; gap:1em;">
+            <label>クラス: <select id="inputClassSelect"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select></label>
+            <label>組: <select id="inputGroupSelect"></select></label>
+        </div>
+        <div id="inputPlayersArea" style="margin-top:1em;"></div>
+        <button id="inputScoreSubmitBtn" style="margin-top:1em;">点数一括登録</button>
+    </div>
+    <div class="container">
+        <div class="ranking-section">
+            <div class="tabs" id="totalRankTabs">
+                <button data-class="C" class="active">Cクラス</button><button data-class="B">Bクラス</button><button data-class="A">Aクラス</button>
+            </div>
+            <div class="table-wrapper">
+                <div id="totalRankContent_C" class="tab-content active">
+                    <h3>Cクラス 総合得点ランキング</h3>
+                    <table id="classC_playersTable"><thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead><tbody></tbody></table>
+                </div>
+                <div id="totalRankContent_B" class="tab-content">
+                    <h3>Bクラス 総合得点ランキング</h3>
+                    <table id="classB_playersTable"><thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead><tbody></tbody></table>
+                </div>
+                <div id="totalRankContent_A" class="tab-content">
+                     <h3>Aクラス 総合得点ランキング</h3>
+                     <table id="classA_playersTable"><thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead><tbody></tbody></table>
+                </div>
+            </div>
+        </div>
+        <div class="ranking-section">
+            <div class="tabs" id="eventRankTabs">
+                <button data-class="C" class="active">Cクラス</button><button data-class="B">Bクラス</button><button data-class="A">Aクラス</button>
+            </div>
+            <div class="table-wrapper">
+                <div id="eventRankContent_C" class="tab-content active">
+                    <h3>Cクラス 種目別ランキング</h3>
+                    <div data-event="floor"><h4>Cクラス - 床</h4><table id="eventRankContent_C_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pommel"><h4>Cクラス - あん馬</h4><table id="eventRankContent_C_pommel"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="rings"><h4>Cクラス - つり輪</h4><table id="eventRankContent_C_rings"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="vault"><h4>Cクラス - 跳馬</h4><table id="eventRankContent_C_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pbars"><h4>Cクラス - 平行棒</h4><table id="eventRankContent_C_pbars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="hbar"><h4>Cクラス - 鉄棒</h4><table id="eventRankContent_C_hbar"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                </div>
+                <div id="eventRankContent_B" class="tab-content">
+                    <h3>Bクラス 種目別ランキング</h3>
+                    <div data-event="floor"><h4>Bクラス - 床</h4><table id="eventRankContent_B_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pommel"><h4>Bクラス - あん馬</h4><table id="eventRankContent_B_pommel"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="rings"><h4>Bクラス - つり輪</h4><table id="eventRankContent_B_rings"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="vault"><h4>Bクラス - 跳馬</h4><table id="eventRankContent_B_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pbars"><h4>Bクラス - 平行棒</h4><table id="eventRankContent_B_pbars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="hbar"><h4>Bクラス - 鉄棒</h4><table id="eventRankContent_B_hbar"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                </div>
+                <div id="eventRankContent_A" class="tab-content">
+                    <h3>Aクラス 種目別ランキング</h3>
+                    <div data-event="floor"><h4>Aクラス - 床</h4><table id="eventRankContent_A_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pommel"><h4>Aクラス - あん馬</h4><table id="eventRankContent_A_pommel"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="rings"><h4>Aクラス - つり輪</h4><table id="eventRankContent_A_rings"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="vault"><h4>Aクラス - 跳馬</h4><table id="eventRankContent_A_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="pbars"><h4>Aクラス - 平行棒</h4><table id="eventRankContent_A_pbars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                    <div data-event="hbar"><h4>Aクラス - 鉄棒</h4><table id="eventRankContent_A_hbar"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="print-container"></div>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="app_men.js"></script>
+</body>
+</html>
+
