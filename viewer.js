@@ -1,4 +1,4 @@
-// --- アプリケーションの状態管理 ---
+// --- DOM要素のキャッシュ ---
 let appState = {
     competitionName: '',
     players: [],
@@ -14,7 +14,7 @@ function cacheDOMElements() {
     const ids = [
         'competitionName',
         'classTabs', 'rankingTypeSelect',
-        'totalRankingSection', 'eventRankingSection',
+        'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
         'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A'
@@ -40,18 +40,48 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     cacheDOMElements();
     setupEventListeners();
-    
-    const socket = io();
 
-    // サーバーから状態更新を受け取る
+    const socket = io('https://gymnastics-score-app.onrender.com', {
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+    });
+
+    setupSocketEventListeners(socket);
+});
+
+function setupSocketEventListeners(socket) {
+    socket.on('connect', () => {
+        console.log('サーバーに接続しました。');
+        if (dom.connectionStatus) {
+            dom.connectionStatus.textContent = '';
+            dom.connectionStatus.style.display = 'none';
+        }
+        socket.emit('requestInitialData');
+    });
+
     socket.on('stateUpdate', (newState) => {
         console.log('State received from server');
-        // UIの状態はクライアント側で保持する
         appState.competitionName = newState.competitionName;
         appState.players = newState.players;
         renderAll();
     });
-});
+
+    socket.on('disconnect', () => {
+        console.warn('サーバーから切断されました。');
+        if (dom.connectionStatus) {
+            dom.connectionStatus.textContent = 'サーバーとの接続が切れました。再接続します...';
+            dom.connectionStatus.style.display = 'block';
+        }
+    });
+
+    socket.on('reconnecting', (attemptNumber) => {
+        if (dom.connectionStatus) {
+            dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`;
+            dom.connectionStatus.style.display = 'block';
+        }
+    });
+}
 
 // --- 描画処理 ---
 function renderAll() {

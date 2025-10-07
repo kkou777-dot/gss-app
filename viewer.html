@@ -92,7 +92,8 @@
     </div>
 
     <!-- サーバーと通信するためのライブラリを読み込み -->
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- ローカルファイルとして開いても動作するように、CDNからライブラリを読み込みます -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <!-- 保護者ページ専用のJavaScriptファイルを読み込み -->
     <script src="viewer.js"></script>
 </body>
