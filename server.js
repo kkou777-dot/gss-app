@@ -151,6 +151,20 @@ async function saveStateToSheet(gender = 'women') {
 // 静的ファイルを提供 (html, js, cssなど)
 app.use(express.static(path.join(__dirname)));
 
+// 保護者用ページへのルーティングを追加
+app.get('/viewer', (req, res) => {
+  res.sendFile(path.join(__dirname, 'viewer.html'));
+});
+
+app.get('/viewer_men', (req, res) => {
+  res.sendFile(path.join(__dirname, 'viewer_men.html'));
+});
+
+// (オプション) /men でも男子ページにアクセスできるようにする
+app.get('/men', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index_men.html'));
+});
+
 io.on('connection', async (socket) => {
   console.log('a user connected');
 
