@@ -23,7 +23,8 @@ function cacheDOMElements() {
         'eventRankContent_C_floor', 'eventRankContent_C_vault', 'eventRankContent_C_bars', 'eventRankContent_C_beam',
         'eventRankContent_B_floor', 'eventRankContent_B_vault', 'eventRankContent_B_bars', 'eventRankContent_B_beam',
         'eventRankContent_A_floor', 'eventRankContent_A_vault', 'eventRankContent_A_bars', 'eventRankContent_A_beam'
-    ].concat([
+    ],
+    'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal'].concat([
         'saveButton',
         'saveStatus',
         'connectionStatus', // 接続状態を表示する要素
@@ -383,6 +384,20 @@ function setupEventListeners() {
     dom.competitionNameInput.addEventListener('input', (e) => {
         appState.competitionName = e.target.value;
         renderCompetitionName();
+    });
+
+    // CSVヘルプモーダルのイベントリスナー
+    dom.csvHelpBtn.addEventListener('click', () => {
+        dom.csvHelpModal.style.display = 'block';
+    });
+    dom.closeCsvHelpModal.addEventListener('click', () => {
+        dom.csvHelpModal.style.display = 'none';
+    });
+    // モーダルの外側をクリックしたら閉じる
+    window.addEventListener('click', (e) => {
+        if (e.target == dom.csvHelpModal) {
+            dom.csvHelpModal.style.display = 'none';
+        }
     });
 }
 

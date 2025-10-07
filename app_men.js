@@ -21,7 +21,8 @@ function cacheDOMElements() {
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
         'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A',
-        'saveButton', 'saveStatus', 'connectionStatus', 'print-container'
+        'saveButton', 'saveStatus', 'connectionStatus', 'print-container',
+        'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal'
     ];
     // 動的に種目別ランキングのIDを追加
     ['C', 'B', 'A'].forEach(cls => {
@@ -281,6 +282,19 @@ function setupEventListeners() {
     dom.totalRankTabs.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { appState.ui.totalRankClass = e.target.dataset.class; renderTotalRanking(); } });
     dom.eventRankTabs.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { appState.ui.eventRankClass = e.target.dataset.class; renderEventRanking(); } });
     dom.competitionNameInput.addEventListener('input', (e) => { appState.competitionName = e.target.value; renderCompetitionName(); });
+
+    // CSVヘルプモーダルのイベントリスナー
+    dom.csvHelpBtn.addEventListener('click', () => {
+        dom.csvHelpModal.style.display = 'block';
+    });
+    dom.closeCsvHelpModal.addEventListener('click', () => {
+        dom.csvHelpModal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target == dom.csvHelpModal) {
+            dom.csvHelpModal.style.display = 'none';
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -321,4 +335,3 @@ function setupSocketEventListeners(socket) {
         if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
     });
 }
-

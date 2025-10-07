@@ -74,6 +74,32 @@
 
       /* 入力フォームのスタイル */
       input[type="text"], input[type="number"], select { padding: 8px; border-radius: 6px; border: 1px solid #f8bbd0; }
+
+      /* モーダルウィンドウのスタイル */
+      .modal {
+        display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+        overflow: auto; background-color: rgba(0,0,0,0.5);
+      }
+      .modal-content {
+        background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888;
+        width: 80%; max-width: 700px; border-radius: 12px; position: relative;
+      }
+      .close-button {
+        color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold;
+      }
+      .close-button:hover, .close-button:focus {
+        color: black; text-decoration: none; cursor: pointer;
+      }
+      .manual-table { margin-top: 1em; }
+      .manual-table th, .manual-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+      .manual-table thead th { background-color: #fce4ec; }
+      .manual-table ul { text-align: left; }
+
+      #csvHelpBtn {
+        background-color: #6c757d;
+      }
+      #csvHelpBtn:hover { background-color: #5a6268; }
+
       @media (max-width: 768px) {
         body { margin: 1em; }
         h1 { font-size: 1.5em; }
@@ -164,6 +190,7 @@
         <div style="margin-bottom:1em;">
             <label>CSVファイルから一括登録: <input type="file" id="csvInput" accept=".csv"></label>
             <button id="csvUploadBtn">CSV読み込み</button>
+            <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
         <hr style="margin: 1.5em 0;">
         <div style="display:flex; align-items:center; gap:1em;">
@@ -248,6 +275,48 @@
 
     <!-- 印刷専用のコンテンツエリア -->
     <div id="print-container"></div>
+
+    <!-- CSVヘルプモーダル -->
+    <div id="csvHelpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeCsvHelpModal">&times;</span>
+            <h2>CSVデータの作り方 (女子用)</h2>
+            <p>Excelなどの表計算ソフトで、以下の形式で選手データを作成し、「CSV (カンマ区切り)」形式で保存してください。</p>
+            <p><strong>注意:</strong> 1行目は必ずヘッダー（項目名）にしてください。プログラムは2行目からデータを読み込みます。</p>
+            <table class="manual-table">
+                <thead>
+                    <tr>
+                        <th>A列</th><th>B列</th><th>C列</th><th>D列</th><th>E列</th><th>F列</th><th>G列</th><th>H列</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>クラス</td><td>組</td><td>(空欄)</td><td>選手名</td><td>床</td><td>跳馬</td><td>段違い</td><td>平均台</td>
+                    </tr>
+                    <tr>
+                        <td>C</td><td>1組</td><td></td><td>体操 花子</td><td>0</td><td>0</td><td>0</td><td>0</td>
+                    </tr>
+                    <tr>
+                        <td>B</td><td>2組</td><td></td><td>日本 桜</td><td>0</td><td>0</td><td>0</td><td>0</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h4>ポイント</h4>
+            <ul>
+                <li><strong>A列 (クラス):</strong> C, B, A のいずれかを入力します。</li>
+                <li><strong>B列 (組):</strong> 「1組」「2組」のように入力します。</li>
+                <li><strong>C列:</strong> この列は使いませんが、必ず空の列として存在させてください。</li>
+                <li><strong>D列 (選手名):</strong> 選手のフルネームを入力します。</li>
+                <li><strong>E列〜H列 (得点):</strong> 初期値として 0 を入力しておくと確実です。</li>
+            </ul>
+            <h4>保存方法</h4>
+            <ol>
+                <li>Excelのメニューから「ファイル」→「名前を付けて保存」を選択します。</li>
+                <li>「ファイルの種類」で「CSV (カンマ区切り) (*.csv)」を選択します。</li>
+                <li>「保存」ボタンをクリックします。(警告が表示される場合がありますが、「はい」で進んでください)</li>
+            </ol>
+        </div>
+    </div>
 
     <!-- サーバーと通信するためのライブラリを読み込み -->
     <!-- ローカルファイルとして開いても動作するように、CDNからライブラリを読み込みます -->
