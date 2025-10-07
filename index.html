@@ -59,56 +59,37 @@
       }
       .event-selector { margin-bottom: 1em; }
 
+      /* 印刷専用のコンテナは通常は非表示 */
+      #print-container {
+        display: none;
+      }
+
       /* --- 印刷用スタイル --- */
       @media print {
         /* 印刷したくない要素をすべて非表示にする */
-        body > header,
         .input-section,
-        #printBtn {
+        #printBtn,
+        .save-container,
+        h1,
+        #connectionStatus,
+        .container {
           display: none !important;
         }
 
         /* 印刷時のレイアウトをリセット */
         body {
           margin: 0;
-          padding: 0;
         }
 
-        /* ランキングセクションのスタイルを調整 */
-        .ranking-section {
-          display: block !important; /* 非表示になっている可能性があるので解除 */
-          width: 100%;
-          margin: 0 0 2cm 0; /* セクション間の余白 */
-          padding: 0;
-          border: none;
-          box-shadow: none;
-        }
-        /* 印刷時に不要な要素を非表示にするクラス */
-        .no-print {
-          display: none !important;
-        }
- 
-        /* 最後のセクションの後には改ページしない */
-        .ranking-section:last-child {
-          page-break-after: avoid;
-          margin-bottom: 0;
+        /* 印刷専用エリアを表示 */
+        #print-container {
+            display: block !important;
         }
 
-        /* 総合ランキングのタブとコンテンツをすべて表示 */
-        #totalRankTabs, #eventRankTabs {
-          display: none !important; /* タブ自体は不要なので非表示 */
+        .print-page {
+            page-break-after: always; /* 各クラスの表の後に改ページ */
         }
-        .tab-content {
-          display: block !important; /* 全てのクラスのランキングを表示 */
-          opacity: 1 !important;
-          position: static !important;
-          page-break-after: always; /* 各コンテンツの後に改ページ */
-        }
-        /* 種目別ランキングの各項目も改ページ */
-        .ranking-section:last-of-type .tab-content > div {
-            page-break-after: always;
-        }
-        .ranking-section:last-of-type .tab-content > div:last-child {
+        .print-page:last-child {
             page-break-after: avoid;
         }
 
@@ -118,30 +99,8 @@
           border-collapse: collapse;
           font-size: 10pt; /* 用紙に収まるようにフォントを調整 */
         }
-        th, td {
-          border: 1px solid #ccc;
-          padding: 4px 8px;
-          text-align: left;
-        }
-        /* 総合ランキングの「組」と「編集」列を非表示 */
-        .ranking-section:first-of-type th:nth-child(3),
-        .ranking-section:first-of-type td:nth-child(3),
-        .ranking-section:first-of-type th:nth-child(5),
-        .ranking-section:first-of-type td:nth-child(5) {
-          display: none;
-        }
         th {
           background-color: #f2f2f2;
-        }
-
-        /* 種目別ランキングのリストスタイル */
-        #event-ranking ol {
-          font-size: 10pt;
-        }
-
-        /* 編集ボタンを非表示 (個別指定から統合) */
-        td button {
-          display: none !important;
         }
       }
     </style>
@@ -246,6 +205,9 @@
             </div>
         </div>
     </div>
+
+    <!-- 印刷専用のコンテンツエリア -->
+    <div id="print-container"></div>
 
     <!-- サーバーと通信するためのライブラリを読み込み -->
     <!-- ローカルファイルとして開いても動作するように、CDNからライブラリを読み込みます -->

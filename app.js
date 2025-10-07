@@ -14,7 +14,7 @@ const appState = {
 function cacheDOMElements() {
     const ids = [
         'csvInput', 'csvUploadBtn', 'inputClassSelect', 'inputGroupSelect',
-        'inputPlayersArea', 'inputScoreSubmitBtn', 'totalRankTabs', 'eventRankTabs', 
+        'inputPlayersArea', 'inputScoreSubmitBtn', 'totalRankTabs', 'eventRankTabs',
         'printBtn', 'competitionNameInput',
         'competitionName',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
@@ -26,7 +26,8 @@ function cacheDOMElements() {
     ].concat([
         'saveButton',
         'saveStatus',
-        'connectionStatus' // 接続状態を表示する要素
+        'connectionStatus', // 接続状態を表示する要素
+        'print-container' // 印刷用コンテナ
     ]);
     ids.forEach(id => dom[id] = document.getElementById(id));
 }
@@ -321,14 +322,78 @@ function scrollToPlayerInput(originalIndex) {
     }
 }
 
-// --- 初期化処理 ---
+/**
+ * 印刷用のHTMLを生成して表示する
+ */
+function prepareForPrint() {
+    if (!dom['print-container']) return;
+
+    const container = dom['print-container'];
+    container.innerHTML = ''; // 中身をクリア
+
+    const competitionName = appState.competitionName || '体操スコアシート';
+
+    ['C', 'B', 'A'].forEach(classVal => {
+        const playersInClass = appState.players
+            .filter(p => p.playerClass === classVal)
+            .sort((a, b) => (b.total || 0) - (a.total || 0));
+
+        if (playersInClass.length === 0) return;
+
+        // 順位を計算
+        let rank = 1;
+        const rankedPlayers = playersInClass.map((p, i) => {
+            if (i > 0 && (p.total || 0) < (playersInClass[i - 1].total || 0)) {
+                rank = i + 1;
+            }
+            return { ...p, rank };
+        });
+
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'print-page';
+
+        let tableHTML = `
+            <h2>${competitionName} - ${classVal}クラス 結果</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>順位</th>
+                        <th>選手名</th>
+                        <th>床</th>
+                        <th>跳馬</th>
+                        <th>段違い平行棒</th>
+                        <th>平均台</th>
+                        <th>総合得点</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        rankedPlayers.forEach(p => {
+            tableHTML += `<tr>
+                <td>${p.rank}</td>
+                <td>${p.name}</td>
+                <td>${(p.floor || 0).toFixed(3)}</td>
+                <td>${(p.vault || 0).toFixed(3)}</td>
+                <td>${(p.bars || 0).toFixed(3)}</td>
+                <td>${(p.beam || 0).toFixed(3)}</td>
+                <td>${(p.total || 0).toFixed(3)}</td>
+            </tr>`;
+        });
+
+        tableHTML += `</tbody></table>`;
+        pageDiv.innerHTML = tableHTML;
+        container.appendChild(pageDiv);
+    });
+}
+
 function setupEventListeners() {
-    // 印刷ボタン
-    dom.printBtn.addEventListener('click', () => window.print());
+    dom.printBtn.addEventListener('click', () => {
+        prepareForPrint();
+        window.print();
+    });
 
     dom.competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
-        // 自動保存は行わない
         saveStateToServer(); // 変更が確定したら自動保存
     });
     // CSV読み込み
@@ -352,15 +417,13 @@ function setupEventListeners() {
         const currentInput = e.target;
         const currentEvent = currentInput.dataset.event;
 
-        // 表示されているすべての入力欄を取得
         const allInputs = Array.from(dom.inputPlayersArea.querySelectorAll('input[type="number"]'));
         const currentIndex = allInputs.indexOf(currentInput);
 
-        // 次の同じ種目の入力欄を探す
         for (let i = currentIndex + 1; i < allInputs.length; i++) {
             if (allInputs[i].dataset.event === currentEvent) {
                 allInputs[i].focus();
-                return; // 次の入力欄にフォーカスしたら処理を終了
+                return;
             }
         }
     });
@@ -381,7 +444,6 @@ function setupEventListeners() {
         }
     });
 
-    // リアルタイムでh1タグだけ更新
     dom.competitionNameInput.addEventListener('input', (e) => {
         appState.competitionName = e.target.value;
         renderCompetitionName();
