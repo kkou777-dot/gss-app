@@ -321,3 +321,4 @@ function setupSocketEventListeners(socket) {
         if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
     });
 }
+
