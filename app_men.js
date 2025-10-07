@@ -20,17 +20,17 @@ function cacheDOMElements() {
         'printBtn', 'competitionNameInput', 'competitionName',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
-        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A',
-        'saveButton', 'saveStatus', 'connectionStatus', 'print-container',
+        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A', 'saveButton',
+        'saveStatus', 'connectionStatus', 'print-container',
         'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal'
     ];
-    // 動的に種目別ランキングのIDを追加
+    // 男子用の種目別ランキングテーブルIDを動的に追加
     ['C', 'B', 'A'].forEach(cls => {
         MEN_EVENTS.forEach(evt => {
             ids.push(`eventRankContent_${cls}_${evt}`);
         });
     });
-    ids.forEach(id => dom[id] = document.getElementById(id));
+    ids.forEach(id => dom[id] = document.getElementById(id)); // ここは変更不要
 }
 
 function handleCsvUpload() {
@@ -295,17 +295,8 @@ function setupEventListeners() {
             dom.csvHelpModal.style.display = 'none';
         }
     });
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const socket = io('https://gymnastics-score-app.onrender.com', {
-        reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000,
-    });
-    appState.socket = socket;
-    setupSocketEventListeners(socket);
-    cacheDOMElements();
-    setupEventListeners();
-});
+}
 
 function setupSocketEventListeners(socket) {
     socket.on('connect', () => {
@@ -335,3 +326,14 @@ function setupSocketEventListeners(socket) {
         if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const socket = io('https://gymnastics-score-app.onrender.com', {
+        reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000,
+    });
+    appState.socket = socket;
+
+    cacheDOMElements();
+    setupEventListeners();
+    setupSocketEventListeners(socket);
+});

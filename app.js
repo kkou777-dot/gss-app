@@ -19,16 +19,19 @@ function cacheDOMElements() {
         'competitionName',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
-        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A',
-        'eventRankContent_C_floor', 'eventRankContent_C_vault', 'eventRankContent_C_bars', 'eventRankContent_C_beam',
-        'eventRankContent_B_floor', 'eventRankContent_B_vault', 'eventRankContent_B_bars', 'eventRankContent_B_beam',
-        'eventRankContent_A_floor', 'eventRankContent_A_vault', 'eventRankContent_A_bars', 'eventRankContent_A_beam'
+        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A'
     ];
+    // 女子用の種目別ランキングテーブルIDを動的に追加
+    ['C', 'B', 'A'].forEach(cls => {
+        ['floor', 'vault', 'bars', 'beam'].forEach(evt => {
+            ids.push(`eventRankContent_${cls}_${evt}`);
+        });
+    });
     const otherIds = [
         'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal',
         'saveButton',
         'saveStatus',
-        'connectionStatus', // 接続状態を表示する要素
+        'connectionStatus',
         'print-container' // 印刷用コンテナ
     ];
     ids.concat(otherIds).forEach(id => dom[id] = document.getElementById(id));
@@ -172,7 +175,7 @@ function renderGroupOptions() {
 }
 
 function renderCompetitionName() {
-    const name = appState.competitionName || '体操スコアシート';
+    const name = appState.competitionName || '体操スコアシート (女子)';
     dom.competitionName.textContent = name;
     dom.competitionNameInput.value = appState.competitionName;
     document.title = name;
@@ -400,30 +403,45 @@ function setupEventListeners() {
             dom.csvHelpModal.style.display = 'none';
         }
     });
+
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Renderサーバーに接続するために、io()の第一引数にサーバーのURLを指定します。
-    // ご自身のRenderアプリケーションのURLに書き換えてください。
-    // 例: 'https://your-app-name.onrender.com'
-    // ※Renderの管理画面(dashboard.render.com)のURLではないのでご注意ください。
-    const socket = io('https://gymnastics-score-app.onrender.com', {
-        // Renderの無料プランでは、一定時間アクセスがないと接続が切れるため、
-        // 自動的に再接続するように設定します。
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
+/**
+ * 印刷用のHTMLを生成し、印刷ダイアログを準備する
+ */
+function prepareForPrint() {
+    const container = dom['print-container'];
+    if (!container) return;
+
+    container.innerHTML = ''; // 印刷エリアをクリア
+    const competitionName = appState.competitionName || '体操スコアシート';
+
+    ['C', 'B', 'A'].forEach(classVal => {
+        const playersInClass = appState.players
+            .filter(p => p.playerClass === classVal)
+            .sort((a, b) => (b.total || 0) - (a.total || 0));
+
+        if (playersInClass.length === 0) return; // そのクラスに選手がいなければスキップ
+
+        let rank = 1;
+        const rankedPlayers = playersInClass.map((p, i) => {
+            if (i > 0 && (p.total || 0) < (playersInClass[i - 1].total || 0)) {
+                rank = i + 1;
+            }
+            return { ...p, rank };
+        });
+
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'print-page';
+        let tableHTML = `<h2>${competitionName} - ${classVal}クラス 結果</h2><table><thead><tr><th>順位</th><th>選手名</th><th>床</th><th>跳馬</th><th>段違い</th><th>平均台</th><th>総合得点</th></tr></thead><tbody>`;
+        rankedPlayers.forEach(p => {
+            tableHTML += `<tr><td>${p.rank}</td><td>${p.name}</td><td>${(p.floor || 0).toFixed(3)}</td><td>${(p.vault || 0).toFixed(3)}</td><td>${(p.bars || 0).toFixed(3)}</td><td>${(p.beam || 0).toFixed(3)}</td><td>${(p.total || 0).toFixed(3)}</td></tr>`;
+        });
+        tableHTML += `</tbody></table>`;
+        pageDiv.innerHTML = tableHTML;
+        container.appendChild(pageDiv);
     });
-    appState.socket = socket;
-
-    setupSocketEventListeners(socket);
-    // サーバー接続を待たずに実行できるUIの初期化
-    cacheDOMElements();
-
-    // UIの準備ができたので、基本的なイベントリスナーを設定
-    setupEventListeners();
-
-});
+}
 
 /**
  * WebSocketのイベントリスナーを設定する
@@ -479,3 +497,21 @@ function setupSocketEventListeners(socket) {
     //     console.log('手動保存が成功しました:', message);
     // });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Renderサーバーに接続するために、io()の第一引数にサーバーのURLを指定します。
+    // ご自身のRenderアプリケーションのURLに書き換えてください。
+    // 例: 'https://your-app-name.onrender.com'
+    const socket = io('https://gymnastics-score-app.onrender.com', {
+        // Renderの無料プランでは、一定時間アクセスがないと接続が切れるため、
+        // 自動的に再接続するように設定します。
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+    });
+    appState.socket = socket;
+
+    cacheDOMElements();
+    setupEventListeners();
+    setupSocketEventListeners(socket);
+});

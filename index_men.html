@@ -71,12 +71,39 @@
       #csvHelpBtn { background-color: #6c757d; }
       #csvHelpBtn:hover { background-color: #5a6268; }
 
+      /* --- 男女切り替えボタン --- */
+      .switch-gender-btn {
+        background-color: #ec407a; /* 女子用のピンク色 */
+        padding: 4px 10px; /* さらに小さくする */
+        font-size: 0.75em; /* フォントをさらに小さくする */
+        vertical-align: middle; /* 見出しのテキストと高さを合わせる */
+      }
+      .switch-gender-btn:hover { background-color: #d81b60; }
+
+      h1 {
+        display: flex;
+        justify-content: space-between; /* 要素を両端に配置 */
+        align-items: center;
+      }
+
       @media (max-width: 768px) {
         body { margin: 1em; }
         h1 { font-size: 1.5em; }
         .input-section, .ranking-section { padding: 1em; }
         .container { grid-template-columns: 1fr; }
         .player-input-row { flex-direction: column; align-items: flex-start; gap: 0.5em; }
+        /* --- CSVアップロードエリアのスタイル --- */
+        .csv-upload-area {
+            display: flex;
+            flex-direction: column; /* 縦並びにする */
+            align-items: stretch;   /* 幅を親要素に合わせる */
+            gap: 10px; /* 要素間の隙間 */
+        }
+        .csv-upload-area > * {
+            width: 100%; /* 各要素の幅を100%にする */
+            box-sizing: border-box; /* paddingやborderを幅に含める */
+        }
+
         .score-inputs { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em 1em; border: 1px solid #ccc; padding: 0.75em; border-radius: 4px; background-color: #f9f9f9; }
         .score-inputs input { width: 100%; box-sizing: border-box; }
       }
@@ -91,10 +118,24 @@
         table { width: 100%; border-collapse: collapse; font-size: 10pt; }
         th { background-color: #f2f2f2; }
       }
+
+      /* --- フッター --- */
+      footer {
+        text-align: center;
+        margin-top: 3em;
+        padding-top: 1.5em;
+        border-top: 1px solid #90caf9; /* テーマカラーに合わせた線 */
+        color: #aaa;
+        font-size: 0.85em;
+      }
     </style>
 </head>
 <body>
-    <h1><span id="competitionName">体操スコアシート (男子)</span></h1>
+
+    <h1>
+        <span id="competitionName">体操スコアシート (男子)</span>
+        <button type="button" class="switch-gender-btn" onclick="location.href='index.html'">女子用に切り替え</button>
+    </h1>
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
     <div class="save-container" style="margin-bottom: 1em;">
         <button id="saveButton">スプレッドシートに保存</button>
@@ -107,8 +148,9 @@
             <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
         </div>
         <hr style="margin: 1.5em 0;">
-        <div style="margin-bottom:1em;">
-            <label>CSVファイルから一括登録: <input type="file" id="csvInput" accept=".csv"></label>
+        <div class="csv-upload-area" style="margin-bottom:1em;">
+            <label for="csvInput">CSVファイルから一括登録:</label>
+            <input type="file" id="csvInput" accept=".csv">
             <button id="csvUploadBtn">CSV読み込み</button>
             <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
@@ -175,6 +217,11 @@
             </div>
         </div>
     </div>
+
+    <footer>
+        <p>&copy; 2025 Created by KOU</p>
+    </footer>
+
     <div id="print-container"></div>
     <!-- CSVヘルプモーダル -->
     <div id="csvHelpModal" class="modal">

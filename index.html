@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>体操スコアシート</title>
+    <title>体操スコアシート (女子)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       body {
@@ -100,11 +100,54 @@
       }
       #csvHelpBtn:hover { background-color: #5a6268; }
 
+      /* --- 男女切り替えボタン --- */
+      .switch-gender-btn {
+        background-color: #1976d2; /* 男子用の青色 */
+        padding: 4px 10px; /* さらに小さくする */
+        font-size: 0.75em; /* フォントをさらに小さくする */
+        vertical-align: middle; /* 見出しのテキストと高さを合わせる */
+      }
+      .switch-gender-btn:hover { background-color: #1565c0; }
+
+      h1 {
+        display: flex;
+        justify-content: space-between; /* 要素を両端に配置 */
+        align-items: center;
+      }
+      .event-selector { margin-bottom: 1em; }
+
+      /* 印刷専用のコンテナは通常は非表示 */
+      #print-container {
+        display: none;
+      }
+
+      /* --- フッター --- */
+      footer {
+        text-align: center;
+        margin-top: 3em;
+        padding-top: 1.5em;
+        border-top: 1px solid #f8bbd0; /* テーマカラーに合わせた線 */
+        color: #aaa;
+        font-size: 0.85em;
+      }
+      /* --- 印刷用スタイル --- */
       @media (max-width: 768px) {
         body { margin: 1em; }
         h1 { font-size: 1.5em; }
         .input-section, .ranking-section { padding: 1em; }
         .container { grid-template-columns: 1fr; }
+
+        /* --- CSVアップロードエリアのスタイル --- */
+        .csv-upload-area {
+            display: flex;
+            flex-direction: column; /* 縦並びにする */
+            align-items: stretch;   /* 幅を親要素に合わせる */
+            gap: 10px; /* 要素間の隙間 */
+        }
+        .csv-upload-area > * {
+            width: 100%; /* 各要素の幅を100%にする */
+            box-sizing: border-box; /* paddingやborderを幅に含める */
+        }
         .player-input-row {
           flex-direction: column;
           align-items: flex-start;
@@ -123,22 +166,10 @@
         }
         .score-inputs input { width: 100%; box-sizing: border-box; }
       }
-      .event-selector { margin-bottom: 1em; }
 
-      /* 印刷専用のコンテナは通常は非表示 */
-      #print-container {
-        display: none;
-      }
-
-      /* --- 印刷用スタイル --- */
       @media print {
         /* 印刷したくない要素をすべて非表示にする */
-        .input-section,
-        #printBtn,
-        .save-container,
-        h1,
-        #connectionStatus,
-        .container {
+        body > *:not(#print-container) {
           display: none !important;
         }
 
@@ -166,14 +197,17 @@
           font-size: 10pt; /* 用紙に収まるようにフォントを調整 */
         }
         th {
-          background-color: #f2f2f2;
+          background-color: #f2f2f2 !important; /* 印刷時に背景色を強制 */
         }
       }
     </style>
 </head>
 <body>
 
-    <h1><span id="competitionName">体操スコアシート</span></h1>
+    <h1>
+        <span id="competitionName">体操スコアシート (女子)</span>
+        <button type="button" class="switch-gender-btn" onclick="location.href='index_men.html'">男子用に切り替え</button>
+    </h1>
     <!-- サーバー接続状態の表示エリア -->
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
     <div class="save-container" style="margin-bottom: 1em;">
@@ -187,8 +221,9 @@
             <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
         </div>
         <hr style="margin: 1.5em 0;">
-        <div style="margin-bottom:1em;">
-            <label>CSVファイルから一括登録: <input type="file" id="csvInput" accept=".csv"></label>
+        <div class="csv-upload-area" style="margin-bottom:1em;">
+            <label for="csvInput">CSVファイルから一括登録:</label>
+            <input type="file" id="csvInput" accept=".csv">
             <button id="csvUploadBtn">CSV読み込み</button>
             <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
@@ -275,6 +310,10 @@
 
     <!-- 印刷専用のコンテンツエリア -->
     <div id="print-container"></div>
+
+    <footer>
+        <p>&copy; 2025 Created by KOU</p>
+    </footer>
 
     <!-- CSVヘルプモーダル -->
     <div id="csvHelpModal" class="modal">
