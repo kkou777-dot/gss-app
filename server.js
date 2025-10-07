@@ -45,13 +45,18 @@ let appState = {
     competitionName: '',
     players: [],
 };
+// 男子用の状態もサーバー側で保持
+let appStateMen = {
+    competitionName: '',
+    players: [],
+};
 
 // --- Google Sheets 連携関数 ---
 
 /**
  * スプレッドシートから最新の状態を読み込み、appStateを更新する
  */
-async function loadStateFromSheet() {
+async function loadStateFromSheet(gender = 'women') {
     try {
         await doc.loadInfo(); // スプレッドシートの情報を読み込み
         console.log(`Loaded Google Sheet: ${doc.title}`);
@@ -59,32 +64,45 @@ async function loadStateFromSheet() {
         // 大会名の読み込み (configシートから)
         let configSheet = doc.sheetsByTitle['config'];
         if (!configSheet) {
-            console.log('Creating "config" sheet...');
             configSheet = await doc.addSheet({ title: 'config', headerValues: ['key', 'value'] });
-        } else {
-            const configRows = await configSheet.getRows();
-            const competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
-            appState.competitionName = competitionNameRow ? competitionNameRow.get('value') : '';
         }
+        const configRows = await configSheet.getRows();
+        const competitionNameRow = configRows.find(row => row.get('key') === (gender === 'men' ? 'competitionNameMen' : 'competitionName'));
+        const competitionName = competitionNameRow ? competitionNameRow.get('value') : '';
 
         // 選手データの読み込み (playersシートから)
-        let playersSheet = doc.sheetsByTitle['players'];
+        const sheetName = gender === 'men' ? 'players_men' : 'players';
+        let playersSheet = doc.sheetsByTitle[sheetName];
         if (!playersSheet) {
-            console.log('Creating "players" sheet...');
-            playersSheet = await doc.addSheet({ title: 'players', headerValues: ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'] });
+            const headers = gender === 'men'
+                ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
+                : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
+            playersSheet = await doc.addSheet({ title: sheetName, headerValues: headers });
         }
         const playerRows = await playersSheet.getRows();
-        appState.players = playerRows.map(row => ({
-            name: row.get('name') || '',
-            playerClass: row.get('playerClass') || '',
-            playerGroup: row.get('playerGroup') || '',
-            floor: parseFloat(row.get('floor')) || 0,
-            vault: parseFloat(row.get('vault')) || 0,
-            bars: parseFloat(row.get('bars')) || 0,
-            beam: parseFloat(row.get('beam')) || 0,
-            total: parseFloat(row.get('total')) || 0,
-        }));
-        console.log(`Loaded ${appState.players.length} players and competition name from sheet.`);
+        const players = playerRows.map(row => {
+            const playerData = {
+                name: row.get('name') || '',
+                playerClass: row.get('playerClass') || '',
+                playerGroup: row.get('playerGroup') || '',
+                total: parseFloat(row.get('total')) || 0,
+            };
+            const events = gender === 'men' ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] : ['floor', 'vault', 'bars', 'beam'];
+            events.forEach(event => {
+                playerData[event] = parseFloat(row.get(event)) || 0;
+            });
+            return playerData;
+        });
+
+        if (gender === 'men') {
+            appStateMen.competitionName = competitionName;
+            appStateMen.players = players;
+            console.log(`Loaded ${appStateMen.players.length} men players and competition name from sheet.`);
+        } else {
+            appState.competitionName = competitionName;
+            appState.players = players;
+            console.log(`Loaded ${appState.players.length} women players and competition name from sheet.`);
+        }
     } catch (error) {
         console.error('Error loading state from Google Sheet:', error);
     }
@@ -93,32 +111,38 @@ async function loadStateFromSheet() {
 /**
  * 現在のappStateをスプレッドシートに保存する
  */
-async function saveStateToSheet() {
+async function saveStateToSheet(gender = 'women') {
     // この関数は呼び出し元でエラーを捕捉できるように、try-catchを外してエラーをスローするように変更します。
     if (!doc.title) {
         console.log('Sheet not loaded, skipping save.');
         return; // シートが読み込まれていない場合は何もしない
     }
 
+    const state = gender === 'men' ? appStateMen : appState;
+    const sheetName = gender === 'men' ? 'players_men' : 'players';
+    const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
+
     const configSheet = doc.sheetsByTitle['config'];
     if (configSheet) {
         const configRows = await configSheet.getRows();
-        let competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
+        let competitionNameRow = configRows.find(row => row.get('key') === competitionNameKey);
         if (competitionNameRow) {
-            competitionNameRow.set('value', appState.competitionName);
+            competitionNameRow.set('value', state.competitionName);
             await competitionNameRow.save();
         } else {
-            await configSheet.addRow({ key: 'competitionName', value: appState.competitionName });
+            await configSheet.addRow({ key: competitionNameKey, value: state.competitionName });
         }
     }
 
-    const playersSheet = doc.sheetsByTitle['players'];
+    const playersSheet = doc.sheetsByTitle[sheetName];
     if (playersSheet) {
         // 既存の行をすべてクリア（ヘッダーは残る）
         await playersSheet.clearRows();
         // 最新の選手データを一括で追加
-        if (appState.players && appState.players.length > 0) {
-            await playersSheet.addRows(appState.players, { raw: true });
+        if (state.players && state.players.length > 0) {
+            // ヘッダーにないプロパティを削除してから保存
+            const playersToSave = state.players.map(({ originalIndex, ...rest }) => rest);
+            await playersSheet.addRows(playersToSave, { raw: true });
         }
     }
     console.log('State saved to Google Sheet.');
@@ -137,12 +161,26 @@ app.get('/viewer', (req, res) => {
   res.sendFile(path.join(__dirname, 'viewer.html'));
 });
 
+// 男子用ページ
+app.get('/men', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index_men.html'));
+});
+
+// 男子用保護者ページ
+app.get('/viewer_men', (req, res) => {
+  res.sendFile(path.join(__dirname, 'viewer_men.html'));
+});
+
 io.on('connection', async (socket) => {
   console.log('a user connected');
 
   // クライアントからの初期データ要求に応じて、現在の状態を送信する
   socket.on('requestInitialData', () => {
     socket.emit('stateUpdate', appState);
+  });
+  // 男子用データの要求
+  socket.on('requestInitialDataMen', () => {
+    socket.emit('stateUpdateMen', appStateMen);
   });
 
   // 運営者からの状態更新を受け取る (閲覧者向け)
@@ -170,13 +208,33 @@ io.on('connection', async (socket) => {
     appState.players = newState.players;
 
     try {
-        await saveStateToSheet(); // スプレッドシートへの保存を試みる
+        await saveStateToSheet('women'); // スプレッドシートへの保存を試みる
         io.emit('stateUpdate', appState); // 保存成功後、全クライアントに最新情報を送信
         console.log('保存成功。全クライアントにstateUpdateを送信しました。');
         if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
     } catch (error) {
         console.error('スプレッドシートへの保存中にエラーが発生しました:', error);
         // 保存に失敗したことをリクエスト元のクライアントに通知
+        if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
+    }
+  });
+
+  // 男子用の手動保存要求を受け取る
+  socket.on('saveDataMen', async (newState, callback) => {
+    console.log('クライアントからsaveDataMenリクエストを受信');
+    if (!newState || typeof newState !== 'object') {
+        if (typeof callback === 'function') callback({ success: false, message: '無効なデータです。' });
+        return;
+    }
+    appStateMen.competitionName = newState.competitionName;
+    appStateMen.players = newState.players;
+    try {
+        await saveStateToSheet('men'); // 男子用として保存
+        io.emit('stateUpdateMen', appStateMen); // 男子クライアントに最新情報を送信
+        console.log('男子データの保存成功。全クライアントにstateUpdateMenを送信しました。');
+        if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
+    } catch (error) {
+        console.error('男子データの保存中にエラーが発生しました:', error);
         if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
     }
   });
@@ -190,10 +248,13 @@ io.on('connection', async (socket) => {
 const PORT = process.env.PORT || 3000;
 
 // サーバーを起動する前に、スプレッドシートから状態を読み込む
-loadStateFromSheet().catch(err => {
-    console.error("サーバー起動時のシート読み込みに失敗しました。空の状態で起動を継続します。", err);
+Promise.all([
+    loadStateFromSheet('women'),
+    loadStateFromSheet('men')
+]).catch(err => {
+    console.error("サーバー起動時のシート読み込みに失敗しました。", err);
 }).finally(() => {
-  server.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
-  });
+    server.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+    });
 });
