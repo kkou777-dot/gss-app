@@ -92,7 +92,7 @@ function renderAll() {
 }
 
 function renderCompetitionName() {
-    const name = appState.competitionName || '体操スコアシート';
+    const name = appState.competitionName || '大会結果速報';
     dom.competitionName.textContent = name;
     document.title = name;
 }
