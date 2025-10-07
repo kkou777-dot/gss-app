@@ -151,26 +151,6 @@ async function saveStateToSheet(gender = 'women') {
 // 静的ファイルを提供 (html, js, cssなど)
 app.use(express.static(path.join(__dirname)));
 
-// 運営者ページ
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// 保護者用ページ
-app.get('/viewer', (req, res) => {
-  res.sendFile(path.join(__dirname, 'viewer.html'));
-});
-
-// 男子用ページ
-app.get('/men', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index_men.html'));
-});
-
-// 男子用保護者ページ
-app.get('/viewer_men', (req, res) => {
-  res.sendFile(path.join(__dirname, 'viewer_men.html'));
-});
-
 io.on('connection', async (socket) => {
   console.log('a user connected');
 
