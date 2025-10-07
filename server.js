@@ -99,29 +99,29 @@ async function saveStateToSheet() {
         console.log('Sheet not loaded, skipping save.');
         return; // シートが読み込まれていない場合は何もしない
     }
-    try {
-        const configSheet = doc.sheetsByTitle['config'];
-        if (configSheet) {
-            const configRows = await configSheet.getRows();
-            let competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
-            if (competitionNameRow) {
-                competitionNameRow.set('value', appState.competitionName);
-                await competitionNameRow.save();
-            } else {
-                await configSheet.addRow({ key: 'competitionName', value: appState.competitionName });
-            }
-        }
 
-        const playersSheet = doc.sheetsByTitle['players'];
-        if (playersSheet) {
-            // 既存の行をすべてクリア（ヘッダーは残る）
-            await playersSheet.clearRows();
-            // 最新の選手データを一括で追加
-            if (appState.players && appState.players.length > 0) {
-                await playersSheet.addRows(appState.players, { raw: true });
-            }
+    const configSheet = doc.sheetsByTitle['config'];
+    if (configSheet) {
+        const configRows = await configSheet.getRows();
+        let competitionNameRow = configRows.find(row => row.get('key') === 'competitionName');
+        if (competitionNameRow) {
+            competitionNameRow.set('value', appState.competitionName);
+            await competitionNameRow.save();
+        } else {
+            await configSheet.addRow({ key: 'competitionName', value: appState.competitionName });
         }
-        console.log('State saved to Google Sheet.');
+    }
+
+    const playersSheet = doc.sheetsByTitle['players'];
+    if (playersSheet) {
+        // 既存の行をすべてクリア（ヘッダーは残る）
+        await playersSheet.clearRows();
+        // 最新の選手データを一括で追加
+        if (appState.players && appState.players.length > 0) {
+            await playersSheet.addRows(appState.players, { raw: true });
+        }
+    }
+    console.log('State saved to Google Sheet.');
 }
 
 // 静的ファイルを提供 (html, js, cssなど)
