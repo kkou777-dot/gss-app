@@ -409,6 +409,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // UIの準備ができたので、基本的なイベントリスナーを設定
     setupEventListeners();
 
+});
+
+/**
+ * WebSocketのイベントリスナーを設定する
+ * @param {Socket} socket - Socket.IOのインスタンス
+ */
+function setupSocketEventListeners(socket) {
+    // サーバーに接続が確立した時の処理
+    socket.on('connect', () => {
+        console.log('サーバーに接続しました。');
+        if (dom.connectionStatus) {
+            dom.connectionStatus.textContent = '';
+            dom.connectionStatus.style.display = 'none';
+        }
+        dom.saveButton.disabled = true; // データ受信まで保存ボタンを無効化
+        socket.emit('requestInitialData'); // 接続時に初期データを要求
+    });
+
     // サーバーから最新の状態を受け取った時の処理
     socket.on('stateUpdate', (newState) => {
         console.log('サーバーから最新の状態を受信しました。UIを初期化します。');
@@ -422,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     competitionName: appState.competitionName,
                     players: appState.players,
                 };
-                // 自動保存と同じ関数を呼び出すが、引数で最新の状態を渡す
                 saveStateToServer(stateToSend);
             });
             dom.saveButton.dataset.listenerAttached = 'true';
@@ -431,28 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     });
 
-    // 保存完了通知
-    socket.on('saveSuccess', (message) => {
-        // 保存結果の通知は'saveData'のコールバックで行うため、このリスナーは不要になります。
-        // 意図しない動作を防ぐためにコメントアウトまたは削除します。
-        console.log('手動保存が成功しました:', message);
-    });
-
-    // サーバーに接続が確立した時の処理
-    socket.on('connect', () => {
-        console.log('サーバーに接続しました。');
-        dom.connectionStatus.textContent = '';
-        dom.connectionStatus.style.display = 'none';
-        dom.saveButton.disabled = true; // データ受信まで保存ボタンを無効化
-        socket.emit('requestInitialData'); // 接続時に初期データを要求
-    });
-});
-
-/**
- * WebSocketのイベントリスナーを設定する
- * @param {Socket} socket - Socket.IOのインスタンス
- */
-function setupSocketEventListeners(socket) {
     socket.on('disconnect', () => {
         console.warn('サーバーから切断されました。');
         dom.connectionStatus.textContent = 'サーバーとの接続が切れました。再接続します...';
@@ -464,4 +459,9 @@ function setupSocketEventListeners(socket) {
         dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`;
         dom.connectionStatus.style.display = 'block';
     });
+
+    // 'saveSuccess' は 'saveData' のコールバックに移行したため不要
+    // socket.on('saveSuccess', (message) => {
+    //     console.log('手動保存が成功しました:', message);
+    // });
 }
