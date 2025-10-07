@@ -23,14 +23,15 @@ function cacheDOMElements() {
         'eventRankContent_C_floor', 'eventRankContent_C_vault', 'eventRankContent_C_bars', 'eventRankContent_C_beam',
         'eventRankContent_B_floor', 'eventRankContent_B_vault', 'eventRankContent_B_bars', 'eventRankContent_B_beam',
         'eventRankContent_A_floor', 'eventRankContent_A_vault', 'eventRankContent_A_bars', 'eventRankContent_A_beam'
-    ],
-    'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal'].concat([
+    ];
+    const otherIds = [
+        'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal',
         'saveButton',
         'saveStatus',
         'connectionStatus', // 接続状態を表示する要素
         'print-container' // 印刷用コンテナ
-    ]);
-    ids.forEach(id => dom[id] = document.getElementById(id));
+    ];
+    ids.concat(otherIds).forEach(id => dom[id] = document.getElementById(id));
 }
 
 
