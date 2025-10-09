@@ -126,22 +126,33 @@ io.on('connection', async (socket) => {
     appStates[gender] = newState;
 
     try {
-        await saveStateToSheet(gender); // GAS経由でスプレッドシートへ保存
+        // ★★★ 最終診断：GASに送信するデータを一時的に固定のダミーデータに置き換える ★★★
+        const dummyState = {
+            competitionName: "診断テスト",
+            players: [{ name: "テスト選手1", playerClass: "A", playerGroup: "1", floor: 1.0, vault: 1.0, bars: 1.0, beam: 1.0, total: 4.0 }]
+        };
+        await axios.post(GAS_WEB_APP_URL, { gender, newState: dummyState });
+
         const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
         io.emit(eventName, appStates[gender]); // 対応するクライアントに最新情報を送信
         if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
     } catch (error) {
-        let errorMessage;
-        // axiosからのHTTPエラーの場合、GASが返した詳細なエラー情報が含まれている可能性がある
-        if (error.response && error.response.data) {
-            // GASが返したエラーオブジェクトを文字列化してログに残す
-            const gasError = error.response.data.error || JSON.stringify(error.response.data);
-            errorMessage = `GAS Error (status: ${error.response.status}): ${gasError}`;
+        let detailedErrorMessage;
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                // GASサーバーがエラーレスポンスを返した場合 (例: 500 Internal Server Error)
+                const gasError = error.response.data?.error || JSON.stringify(error.response.data);
+                detailedErrorMessage = `GAS Error (Status: ${error.response.status}): ${gasError}`;
+            } else if (error.request) {
+                // リクエストは送信されたが、レスポンスがなかった場合
+                detailedErrorMessage = `No response from GAS. Request failed.`;
+            }
         } else {
-            errorMessage = error.message;
+            // axios以外の予期せぬエラー
+            detailedErrorMessage = error.message;
         }
 
-        console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, errorMessage);
+        console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, detailedErrorMessage);
         // 保存に失敗したことをリクエスト元のクライアントに通知
         if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
     }

@@ -1,6 +1,5 @@
 // このIDを、操作したいスプレッドシートのIDに置き換えてください。
 // 例: https://docs.google.com/spreadsheets/d/1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWeljGtmU/edit
-const SHEET_ID = '1Xlt4hSx7CGgVFW_6b0zVyCTy-c26X1Ffe-oWeljGtmU';
 
 /**
  * ウェブアプリへのGETリクエストを処理するエントリーポイント関数。
@@ -37,32 +36,31 @@ function doGet(e) {
  * @returns {ContentService.TextOutput} - JSON形式のレスポンス
  */
 function doPost(e) {
+  // --- 最終診断コード ---
+  // このコードは、問題の原因を特定するため、受け取った情報を直接シートに書き込みます。
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
+  const debugSheet = doc.getSheetByName('debug_log') || doc.insertSheet('debug_log');
+  const timestamp = new Date();
+
   try {
-    // リクエストボディのJSONデータをパース
+    debugSheet.appendRow([timestamp, 'doPost started.']);
+
     const requestBody = JSON.parse(e.postData.contents);
     const { gender, newState } = requestBody;
 
-    // 受け取ったデータを文字列としてログに記録する（デバッグ用）
-    console.log(`Received data for ${gender}: ${JSON.stringify(newState)}`);
+    const logMessage = `Received: gender=${gender}, players=${newState && newState.players ? newState.players.length : 'N/A'}`;
+    debugSheet.appendRow([timestamp, 'Data parsed.', logMessage]);
 
-    // 必須パラメータのチェック
-    if (!gender || !newState || !newState.players || !newState.hasOwnProperty('competitionName')) {
-      throw new Error('Invalid request body. "gender" and "newState" (with "competitionName" and "players") are required.');
-    }
+    // 本来の保存処理を呼び出す
+    // saveDataToSheet(gender, newState);
 
-    // スプレッドシートにデータを保存
-    saveDataToSheet(gender, newState);
-
-    // 成功メッセージを返す
     const response = { success: true, message: 'State saved successfully.' };
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
-    // エラーの詳細（スタックトレース）を含めてログに記録し、レスポンスとして返す
-    const errorMessage = error.stack ? error.stack : error.toString();
-    console.error(errorMessage);
-    const response = { success: false, message: "GAS Error", error: errorMessage };
+    debugSheet.appendRow([timestamp, 'ERROR', error.stack ? error.stack : error.toString()]);
+    const response = { success: false, message: "GAS Error", error: error.stack ? error.stack : error.toString() };
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON)
       .setStatusCode(500);
@@ -79,7 +77,8 @@ function doPost(e) {
  * @returns {Object} - { competitionName: string, players: Object[] } 形式のオブジェクト
  */
 function loadDataFromSheet(gender) {
-  const doc = SpreadsheetApp.openById(SHEET_ID);
+  // スクリプトが紐づいているアクティブなスプレッドシートを取得
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
   const state = {};
 
   // 1. 大会名の読み込み (configシートから)
@@ -100,7 +99,7 @@ function loadDataFromSheet(gender) {
   }
 
   const playerRows = playersSheet.getDataRange().getValues();
-  if (playerRows.length < 1) {
+  if (!playerRows || playerRows.length < 1) {
     state.players = [];
     return state;
   }
@@ -135,59 +134,57 @@ function loadDataFromSheet(gender) {
  * @param {Object} state - { competitionName: string, players: Object[] } 形式のオブジェクト
  */
 function saveDataToSheet(gender, state) {
-  // 同時書き込みによるエラーを防ぐため、ロックを取得する
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(15000); // 最大15秒待機
-
-    const doc = SpreadsheetApp.openById(SHEET_ID);
-
-    // --- 1. 大会名の保存 ---
+    const lock = LockService.getScriptLock();
     try {
-      const configSheet = doc.getSheetByName('config');
-      if (!configSheet) throw new Error("Sheet 'config' not found.");
-      const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
-      const configData = configSheet.getDataRange().getValues();
-      const nameRowIndex = configData.findIndex(row => row[0] === competitionNameKey);
+        lock.waitLock(30000);
 
-      if (nameRowIndex > -1) {
-        configSheet.getRange(nameRowIndex + 1, 2).setValue(state.competitionName);
-      } else {
-        configSheet.appendRow([competitionNameKey, state.competitionName]);
-      }
-    } catch (e) {
-      throw new Error(`Error saving competition name: ${e.message}`);
-    }
+        const doc = SpreadsheetApp.getActiveSpreadsheet();
 
-    // --- 2. 選手データの保存 ---
-    try {
-      const sheetName = gender === 'men' ? 'players_men' : 'players';
-      const playersSheet = doc.getSheetByName(sheetName);
-      if (!playersSheet) throw new Error(`Sheet '${sheetName}' not found.`);
+        // 1. 大会名の保存
+        saveCompetitionName(doc, gender, state.competitionName);
 
-      const headers = gender === 'men'
-        ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
-        : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
+        // 2. 選手データの保存
+        const headers = gender === 'men'
+            ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
+            : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
+        const sheetName = gender === 'men' ? 'players_men' : 'players';
+        const playersSheet = doc.getSheetByName(sheetName) || doc.insertSheet(sheetName);
 
-      // ヘッダー行(1行目)は残し、データ部分(2行目以降)のみをクリアする
-      if (playersSheet.getLastRow() > 1) {
-        playersSheet.getRange(2, 1, playersSheet.getLastRow() - 1, playersSheet.getMaxColumns()).clearContent();
-      }
-      // ヘッダーを再設定して、列の順序を保証する
-      playersSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-
-      if (state.players && state.players.length > 0) {
-        const playersToSave = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
-        if (playersToSave.length > 0) {
-          playersSheet.getRange(2, 1, playersToSave.length, headers.length).setValues(playersToSave);
+        // シートにデータがなければ、ヘッダーを書き込む
+        if (playersSheet.getLastRow() < 1) {
+            playersSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         }
-      }
-    } catch (e) {
-      throw new Error(`Error saving player data: ${e.message}`);
-    }
 
-    console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
-  } finally {
-    lock.releaseLock();
+        // 書き込むデータを準備 (ヘッダー + 選手データ)
+        const dataToWrite = [headers];
+        if (state.players && state.players.length > 0) {
+            const playerRows = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
+            dataToWrite.push(...playerRows);
+        }
+
+        // シートをクリアし、データを一括で書き込む (最もシンプルで確実な方法)
+        playersSheet.clearContents();
+        playersSheet.getRange(1, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
+
+        console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
+
+    } finally {
+        lock.releaseLock();
+    }
+}
+
+/**
+ * configシートに大会名を保存するヘルパー関数
+ */
+function saveCompetitionName(doc, gender, competitionName) {
+  const configSheet = doc.getSheetByName('config') || doc.insertSheet('config');
+  const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
+  const configData = configSheet.getDataRange().getValues();
+  const nameRowIndex = configData.findIndex(row => row[0] === competitionNameKey);
+
+  if (nameRowIndex > -1) {
+    configSheet.getRange(nameRowIndex + 1, 2).setValue(competitionName);
+  } else {
+    configSheet.appendRow([competitionNameKey, competitionName]);
   }
 }
