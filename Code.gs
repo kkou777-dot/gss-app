@@ -36,37 +36,32 @@ function doGet(e) {
  * @returns {ContentService.TextOutput} - JSON形式のレスポンス
  */
 function doPost(e) {
-  // --- 最終診断コード ---
-  // このコードは、問題の原因を特定するため、受け取った情報を直接シートに書き込みます。
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const debugSheet = doc.getSheetByName('debug_log') || doc.insertSheet('debug_log');
-  const timestamp = new Date();
-
   try {
-    debugSheet.appendRow([timestamp, 'doPost started.']);
-
+    // リクエストボディのJSONデータをパース
     const requestBody = JSON.parse(e.postData.contents);
     const { gender, newState } = requestBody;
 
-    const logMessage = `Received: gender=${gender}, players=${newState && newState.players ? newState.players.length : 'N/A'}`;
-    debugSheet.appendRow([timestamp, 'Data parsed.', logMessage]);
+    // 必須パラメータのチェック
+    if (!gender || !newState || !newState.players || !newState.hasOwnProperty('competitionName')) {
+      throw new Error('Invalid request body. "gender" and "newState" (with "competitionName" and "players") are required.');
+    }
 
     // 本来の保存処理を呼び出す
-    // saveDataToSheet(gender, newState);
+    saveDataToSheet(gender, newState);
 
     const response = { success: true, message: 'State saved successfully.' };
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
-    debugSheet.appendRow([timestamp, 'ERROR', error.stack ? error.stack : error.toString()]);
+    // エラーの詳細（スタックトレース）を含めてログに記録し、レスポンスとして返す
+    console.error(error.stack);
     const response = { success: false, message: "GAS Error", error: error.stack ? error.stack : error.toString() };
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON)
       .setStatusCode(500);
   }
 }
-
 
 // --- スプレッドシート操作のヘルパー関数 ---
 
@@ -141,43 +136,38 @@ function loadDataFromSheet(gender) {
  * @param {Object} state - { competitionName: string, players: Object[] } 形式のオブジェクト
  */
 function saveDataToSheet(gender, state) {
-    const lock = LockService.getScriptLock();
-    try {
-        lock.waitLock(30000);
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
 
-        const doc = SpreadsheetApp.getActiveSpreadsheet();
+    const doc = SpreadsheetApp.getActiveSpreadsheet();
 
-        // 1. 大会名の保存
-        saveCompetitionName(doc, gender, state.competitionName);
+    // 1. 大会名の保存
+    saveCompetitionName(doc, gender, state.competitionName);
 
-        // 2. 選手データの保存
-        const headers = gender === 'men'
-            ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
-            : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
-        const sheetName = gender === 'men' ? 'players_men' : 'players';
-        const playersSheet = doc.getSheetByName(sheetName) || doc.insertSheet(sheetName);
+    // 2. 選手データの保存
+    const headers = gender === 'men'
+      ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
+      : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
+    const sheetName = gender === 'men' ? 'players_men' : 'players';
+    const playersSheet = doc.getSheetByName(sheetName) || doc.insertSheet(sheetName);
 
-        // シートにデータがなければ、ヘッダーを書き込む
-        if (playersSheet.getLastRow() < 1) {
-            playersSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-        }
-
-        // 書き込むデータを準備 (ヘッダー + 選手データ)
-        const dataToWrite = [headers];
-        if (state.players && state.players.length > 0) {
-            const playerRows = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
-            dataToWrite.push(...playerRows);
-        }
-
-        // シートをクリアし、データを一括で書き込む (最もシンプルで確実な方法)
-        playersSheet.clearContents();
-        playersSheet.getRange(1, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
-
-        console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
-
-    } finally {
-        lock.releaseLock();
+    // 書き込むデータを準備 (ヘッダー + 選手データ)
+    const dataToWrite = [headers];
+    if (state.players && state.players.length > 0) {
+      const playerRows = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
+      dataToWrite.push(...playerRows);
     }
+
+    // シートをクリアし、データを一括で書き込む (最もシンプルで確実な方法)
+    playersSheet.clear(); // 書式ごとクリア
+    playersSheet.getRange(1, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
+
+    console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
+
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
