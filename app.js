@@ -75,8 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     .filter(p => p.playerClass === playerClass)
                     .sort((a, b) => b.total - a.total);
 
-                classPlayers.forEach((player, rankIndex) => {
-                    const rank = rankIndex + 1;
+                let rank = 1;
+                classPlayers.forEach((player, i) => {
+                    // 同順位のロジック: 前の選手より点数が低い場合のみ順位を更新
+                    if (i > 0 && player.total < classPlayers[i - 1].total) {
+                        rank = i + 1;
+                    }
                     const row = totalRankTableBody.insertRow();
                     row.innerHTML = `
                         <td>${rank}</td>
