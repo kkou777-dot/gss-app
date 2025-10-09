@@ -28,6 +28,13 @@
     </div>
 
     <div class="input-section">
+        <div id="addPlayerSection" style="margin-bottom:1em; padding-bottom: 1em; border-bottom: 1px solid #eee;">
+            <label>選手を個別に追加:</label>
+            <input type="text" id="newPlayerName" placeholder="選手名">
+            <select id="newPlayerClass"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select>
+            <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
+            <button id="addPlayerBtn">選手を追加</button>
+        </div>
         <div style="display:flex; align-items:center; gap:1em; flex-wrap: wrap;">
             <label>クラス: <select id="inputClassSelect"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select></label>
             <label>組: <select id="inputGroupSelect"></select></label>
