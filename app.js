@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let inputsHTML = '';
         EVENTS.forEach(event => {
             inputsHTML += `
-                <label>${EVENT_NAMES[event]}: 
-                    <input type="number" id="edit_${event}" value="${player[event]}" step="0.001">
+                <label>${EVENT_NAMES[event]}:
+                    <input type="number" id="edit_${event}" value="${player[event] || ''}" placeholder="0" step="0.001">
                 </label><br>`;
         });
 
@@ -396,4 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.print();
     });
+
+    // Enterキーでの移動機能を有効化
+    setupEnterKeyNavigation();
 });
