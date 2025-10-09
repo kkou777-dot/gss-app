@@ -4,130 +4,22 @@
     <meta charset="UTF-8">
     <title>体操スコアシート (男子)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
     <style>
-      body {
-        font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-        margin: 2em;
-        background-color: #f0f8ff; /* 背景をほんのり青に */
-        color: #37474f; /* 文字色をダークブルーグレーに */
-      }
-      h1, h3, h4 {
-        margin-top: 0;
-        color: #1565c0; /* 見出しの色を濃い青に */
-      }
-      .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2em; }
-      .input-section, .ranking-section {
-        border: 1px solid #90caf9; /* 枠線の色を青に */
-        border-radius: 12px;
-        padding: 1.5em;
-        background-color: #fff;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      }
-      .input-section { grid-column: 1 / -1; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
-      th { background-color: #e3f2fd; } /* テーブルヘッダーの背景を薄い青に */
+      /* 男子用テーマカラー */
+      body { background-color: #f0f8ff; color: #37474f; }
+      h1, h3, h4, .tabs button.active { color: #1565c0; }
+      .input-section, .ranking-section { border-color: #90caf9; }
+      th { background-color: #e3f2fd; }
       tbody tr:nth-child(even) { background-color: #f0f8ff; }
-      .tabs { margin-bottom: 1em; display: flex; gap: 4px; }
-      .tabs button {
-        padding: 8px 16px; cursor: pointer; border: 1px solid #90caf9; background-color: #e3f2fd; border-radius: 8px 8px 0 0; transition: all 0.2s ease;
-      }
-      .tabs button.active { background-color: #fff; border-bottom-color: #fff; color: #1565c0; font-weight: bold; }
-      .tab-content { display: none; }
-      .tab-content.active { display: block; }
-      .table-wrapper { overflow-x: auto; }
-      .player-input-row { display: flex; align-items: center; gap: 1em; margin-bottom: 1em; padding-bottom: 1em; border-bottom: 1px solid #eee; flex-wrap: wrap; }
-      .player-name { min-width: 8em; font-weight: bold; }
-      .score-inputs { display: flex; flex-wrap: wrap; gap: 1em; }
-      .score-inputs input { width: 5em; }
-      button, input[type="file"]::file-selector-button {
-        background-color: #1976d2; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: background-color 0.2s ease;
-      }
+      .tabs button { border-color: #90caf9; background-color: #e3f2fd; }
+      button, input[type="file"]::file-selector-button { background-color: #1976d2; }
       button:hover, input[type="file"]::file-selector-button:hover { background-color: #1565c0; }
-      #saveButton { background-color: #43a047; }
-      #saveButton:hover { background-color: #388e3c; }
-      input[type="text"], input[type="number"], select { padding: 8px; border-radius: 6px; border: 1px solid #90caf9; }
-      
-      /* モーダルウィンドウのスタイル */
-      .modal {
-        display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-        overflow: auto; background-color: rgba(0,0,0,0.5);
-      }
-      .modal-content {
-        background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888;
-        width: 80%; max-width: 800px; border-radius: 12px; position: relative;
-      }
-      .close-button {
-        color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold;
-      }
-      .close-button:hover, .close-button:focus {
-        color: black; text-decoration: none; cursor: pointer;
-      }
-      .manual-table { margin-top: 1em; }
-      .manual-table th, .manual-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+      input[type="text"], input[type="number"], select { border-color: #90caf9; }
       .manual-table thead th { background-color: #e3f2fd; }
-      .manual-table ul { text-align: left; }
-
-      #csvHelpBtn { background-color: #6c757d; }
-      #csvHelpBtn:hover { background-color: #5a6268; }
-
-      /* --- 男女切り替えボタン --- */
-      .switch-gender-btn {
-        background-color: #ec407a; /* 女子用のピンク色 */
-        padding: 4px 10px; /* さらに小さくする */
-        font-size: 0.75em; /* フォントをさらに小さくする */
-        vertical-align: middle; /* 見出しのテキストと高さを合わせる */
-      }
+      .switch-gender-btn { background-color: #ec407a; } /* 女子用に切り替えボタンはピンク */
       .switch-gender-btn:hover { background-color: #d81b60; }
-
-      h1 {
-        display: flex;
-        justify-content: space-between; /* 要素を両端に配置 */
-        align-items: center;
-      }
-
-      @media (max-width: 768px) {
-        body { margin: 1em; }
-        h1 { font-size: 1.5em; }
-        .input-section, .ranking-section { padding: 1em; }
-        .container { grid-template-columns: 1fr; }
-        .player-input-row { flex-direction: column; align-items: flex-start; gap: 0.5em; }
-        /* --- CSVアップロードエリアのスタイル --- */
-        .csv-upload-area {
-            display: flex;
-            flex-direction: column; /* 縦並びにする */
-            align-items: stretch;   /* 幅を親要素に合わせる */
-            gap: 10px; /* 要素間の隙間 */
-        }
-        .csv-upload-area > * {
-            width: 100%; /* 各要素の幅を100%にする */
-            box-sizing: border-box; /* paddingやborderを幅に含める */
-        }
-
-        .score-inputs { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5em 1em; border: 1px solid #ccc; padding: 0.75em; border-radius: 4px; background-color: #f9f9f9; }
-        .score-inputs input { width: 100%; box-sizing: border-box; }
-      }
-      .event-selector { margin-bottom: 1em; }
-      #print-container { display: none; }
-      @media print {
-        .input-section, #printBtn, .save-container, h1, #connectionStatus, .container { display: none !important; }
-        body { margin: 0; }
-        #print-container { display: block !important; }
-        .print-page { page-break-after: always; }
-        .print-page:last-child { page-break-after: avoid; }
-        table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-        th { background-color: #f2f2f2; }
-      }
-
-      /* --- フッター --- */
-      footer {
-        text-align: center;
-        margin-top: 3em;
-        padding-top: 1.5em;
-        border-top: 1px solid #90caf9; /* テーマカラーに合わせた線 */
-        color: #aaa;
-        font-size: 0.85em;
-      }
+      footer { border-top-color: #90caf9; }
     </style>
 </head>
 <body>

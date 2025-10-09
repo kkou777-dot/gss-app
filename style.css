@@ -1,0 +1,144 @@
+body {
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  margin: 2em;
+  color: #333;
+}
+h1, h3, h4 {
+  margin-top: 0;
+}
+.container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2em; }
+.input-section, .ranking-section {
+  border-radius: 12px;
+  padding: 1.5em;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.input-section { grid-column: 1 / -1; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
+tbody tr:nth-child(even) { background-color: #f9f9f9; }
+.tabs { margin-bottom: 1em; display: flex; gap: 4px; }
+.tabs button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s ease;
+  border-style: solid;
+  border-width: 1px;
+}
+.tabs button.active { border-bottom-color: #fff; font-weight: bold; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.table-wrapper { overflow-x: auto; }
+
+.player-input-row {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 1em;
+  padding-bottom: 1em;
+  border-bottom: 1px solid #eee;
+  flex-wrap: wrap;
+}
+.player-name { min-width: 8em; font-weight: bold; }
+.score-inputs { display: flex; flex-wrap: wrap; gap: 1em; }
+.score-inputs input { width: 5em; }
+
+button, input[type="file"]::file-selector-button {
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.2s ease;
+}
+
+#saveButton { background-color: #43a047; }
+#saveButton:hover { background-color: #388e3c; }
+
+input[type="text"], input[type="number"], select { padding: 8px; border-radius: 6px; border-width: 1px; border-style: solid; }
+
+.modal {
+  display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+  overflow: auto; background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+  background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888;
+  width: 80%; max-width: 800px; border-radius: 12px; position: relative;
+}
+.close-button {
+  color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold;
+}
+.close-button:hover, .close-button:focus {
+  color: black; text-decoration: none; cursor: pointer;
+}
+.manual-table { margin-top: 1em; }
+.manual-table th, .manual-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+.manual-table ul { text-align: left; }
+
+#csvHelpBtn { background-color: #6c757d; }
+#csvHelpBtn:hover { background-color: #5a6268; }
+
+h1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-selector { margin-bottom: 1em; }
+
+#print-container { display: none; }
+
+footer {
+  text-align: center;
+  margin-top: 3em;
+  padding-top: 1.5em;
+  color: #aaa;
+  font-size: 0.85em;
+}
+
+@media (max-width: 768px) {
+  body { margin: 1em; }
+  h1 { font-size: 1.5em; }
+  .input-section, .ranking-section { padding: 1em; }
+  .container { grid-template-columns: 1fr; }
+
+  .csv-upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+  }
+  .csv-upload-area > * {
+      width: 100%;
+      box-sizing: border-box;
+  }
+  .player-input-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+  .player-name { padding-top: 0; }
+  .score-inputs {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em 1em;
+    border: 1px solid #ccc;
+    padding: 0.75em;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+  }
+  .score-inputs input { width: 100%; box-sizing: border-box; }
+}
+
+@media print {
+  body > *:not(#print-container) { display: none !important; }
+  body { margin: 0; }
+  #print-container { display: block !important; }
+  .print-page { page-break-after: always; }
+  .print-page:last-child { page-break-after: avoid; }
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  th { background-color: #f2f2f2 !important; }
+}
