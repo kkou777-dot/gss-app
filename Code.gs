@@ -42,6 +42,9 @@ function doPost(e) {
     const requestBody = JSON.parse(e.postData.contents);
     const { gender, newState } = requestBody;
 
+    // 受け取ったデータを文字列としてログに記録する（デバッグ用）
+    console.log(`Received data for ${gender}: ${JSON.stringify(newState)}`);
+
     // 必須パラメータのチェック
     if (!gender || !newState || !newState.players || !newState.hasOwnProperty('competitionName')) {
       throw new Error('Invalid request body. "gender" and "newState" (with "competitionName" and "players") are required.');
@@ -130,37 +133,59 @@ function loadDataFromSheet(gender) {
  * @param {Object} state - { competitionName: string, players: Object[] } 形式のオブジェクト
  */
 function saveDataToSheet(gender, state) {
-  const doc = SpreadsheetApp.openById(SHEET_ID);
+  // 同時書き込みによるエラーを防ぐため、ロックを取得する
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000); // 最大15秒待機
 
-  // 1. 大会名の保存
-  const configSheet = doc.getSheetByName('config');
-  if (!configSheet) throw new Error("Sheet 'config' not found.");
-  const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
-  const configData = configSheet.getDataRange().getValues();
-  const nameRowIndex = configData.findIndex(row => row[0] === competitionNameKey);
+    const doc = SpreadsheetApp.openById(SHEET_ID);
 
-  if (nameRowIndex > -1) {
-    configSheet.getRange(nameRowIndex + 1, 2).setValue(state.competitionName);
-  } else {
-    configSheet.appendRow([competitionNameKey, state.competitionName]);
+    // --- 1. 大会名の保存 ---
+    try {
+      const configSheet = doc.getSheetByName('config');
+      if (!configSheet) throw new Error("Sheet 'config' not found.");
+      const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
+      const configData = configSheet.getDataRange().getValues();
+      const nameRowIndex = configData.findIndex(row => row[0] === competitionNameKey);
+
+      if (nameRowIndex > -1) {
+        configSheet.getRange(nameRowIndex + 1, 2).setValue(state.competitionName);
+      } else {
+        configSheet.appendRow([competitionNameKey, state.competitionName]);
+      }
+    } catch (e) {
+      throw new Error(`Error saving competition name: ${e.message}`);
+    }
+
+    // --- 2. 選手データの保存 ---
+    try {
+      const sheetName = gender === 'men' ? 'players_men' : 'players';
+      const playersSheet = doc.getSheetByName(sheetName);
+      if (!playersSheet) throw new Error(`Sheet '${sheetName}' not found.`);
+
+      const headers = gender === 'men'
+        ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
+        : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
+
+      // ヘッダー行(1行目)は残し、データ部分(2行目以降)のみをクリアする
+      if (playersSheet.getLastRow() > 1) {
+        playersSheet.getRange(2, 1, playersSheet.getLastRow() - 1, playersSheet.getMaxColumns()).clearContent();
+      }
+      // ヘッダーを再設定して、列の順序を保証する
+      playersSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+      if (state.players && state.players.length > 0) {
+        const playersToSave = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
+        if (playersToSave.length > 0) {
+          playersSheet.getRange(2, 1, playersToSave.length, headers.length).setValues(playersToSave);
+        }
+      }
+    } catch (e) {
+      throw new Error(`Error saving player data: ${e.message}`);
+    }
+
+    console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
+  } finally {
+    lock.releaseLock();
   }
-
-  // 2. 選手データの保存
-  const sheetName = gender === 'men' ? 'players_men' : 'players';
-  const playersSheet = doc.getSheetByName(sheetName);
-  if (!playersSheet) throw new Error(`Sheet '${sheetName}' not found.`);
-
-  const headers = gender === 'men'
-    ? ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total']
-    : ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'];
-  
-  playersSheet.clear();
-  playersSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-
-  if (state.players && state.players.length > 0) {
-    const playersToSave = state.players.map(p => headers.map(h => p[h] !== undefined ? p[h] : ''));
-    playersSheet.getRange(2, 1, playersToSave.length, headers.length).setValues(playersToSave);
-  }
-
-  console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
 }

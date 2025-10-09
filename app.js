@@ -190,7 +190,20 @@ document.addEventListener('DOMContentLoaded', () => {
         saveStatus.style.color = 'orange';
 
         // サーバーに保存をリクエスト
-        socket.emit('saveData', { gender: GENDER, newState: appState }, (response) => {
+        // --- 保存するデータをサニタイズ（浄化）する ---
+        // UI用に付与した `originalIndex` などを取り除く
+        const cleanPlayers = appState.players.map(p => {
+            const cleanPlayer = {};
+            // GAS側で定義されているヘッダーに含まれるキーのみを抽出
+            ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'].forEach(key => {
+                if (p.hasOwnProperty(key)) {
+                    cleanPlayer[key] = p[key];
+                }
+            });
+            return cleanPlayer;
+        });
+
+        socket.emit('saveData', { gender: GENDER, newState: { ...appState, players: cleanPlayers } }, (response) => {
             if (response.success) {
                 saveStatus.textContent = `保存しました (${new Date().toLocaleTimeString()})`;
                 saveStatus.style.color = 'green';
