@@ -153,11 +153,25 @@ document.addEventListener('DOMContentLoaded', () => {
         container.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault(); // フォームの送信を防ぐ
-                const allInputs = Array.from(container.querySelectorAll('.score-input'));
-                const currentIndex = allInputs.indexOf(e.target);
-                const nextInput = allInputs[currentIndex + 1];
-                if (nextInput) {
-                    nextInput.focus();
+
+                const currentInput = e.target;
+                const currentEvent = currentInput.dataset.event;
+
+                // 現在の選手行を取得
+                const currentRow = currentInput.closest('.player-input-row');
+                if (!currentRow) return;
+
+                // 全ての選手行を取得し、現在の行の次を探す
+                const allRows = Array.from(container.querySelectorAll('.player-input-row'));
+                const currentRowIndex = allRows.indexOf(currentRow);
+                const nextRow = allRows[currentRowIndex + 1];
+
+                if (nextRow) {
+                    // 次の行から同じ種目の入力欄を探してフォーカスする
+                    const nextInput = nextRow.querySelector(`.score-input[data-event="${currentEvent}"]`);
+                    if (nextInput) {
+                        nextInput.focus();
+                    }
                 }
             }
         });
