@@ -428,6 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
             editedPlayer.total = total;
 
             updateAllUI();
+            // 変更を保存するために自動保存をトリガー
+            scheduleAutoSave();
             modal.style.display = 'none';
         };
 
