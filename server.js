@@ -128,13 +128,8 @@ io.on('connection', async (socket) => {
     appStates[gender] = newState;
 
     try {
-        // ★★★ 最終診断：GASに送信するデータを一時的に固定のダミーデータに置き換える ★★★
-        const dummyState = {
-            competitionName: "診断テスト",
-            players: [{ name: "テスト選手1", playerClass: "A", playerGroup: "1", floor: 1.0, vault: 1.0, bars: 1.0, beam: 1.0, total: 4.0 }]
-        };
-        await axios.post(GAS_WEB_APP_URL, { gender, newState: dummyState });
-
+        // 診断コードを元に戻し、本来の保存処理を呼び出す
+        await saveStateToSheet(gender);
         const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
         io.emit(eventName, appStates[gender]); // 対応するクライアントに最新情報を送信
         if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
