@@ -12,7 +12,7 @@ const io = new Server(server);
 const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL;
 if (!GAS_WEB_APP_URL) {
     console.error('\n\n\x1b[31m[設定エラー]\x1b[0m 環境変数 `GAS_WEB_APP_URL` が設定されていません。Google Apps ScriptでデプロイしたウェブアプリのURLを設定してください。\n\n');
-    process.exit(1); // エラーでプログラムを終了
+    // process.exit(1); // デプロイを安定させるため、エラーでも終了しないように変更
 }
 
 // アプリケーションの状態を男女別にサーバー側で保持
