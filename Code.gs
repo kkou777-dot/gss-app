@@ -59,8 +59,10 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
-    console.error(error.stack);
-    const response = { success: false, message: error.message };
+    // エラーの詳細（スタックトレース）を含めてログに記録し、レスポンスとして返す
+    const errorMessage = error.stack ? error.stack : error.toString();
+    console.error(errorMessage);
+    const response = { success: false, message: "GAS Error", error: errorMessage };
     return ContentService.createTextOutput(JSON.stringify(response))
       .setMimeType(ContentService.MimeType.JSON)
       .setStatusCode(500);

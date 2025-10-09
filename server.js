@@ -70,8 +70,12 @@ async function saveStateToSheet(gender) {
     const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: state });
 
     const result = response.data;
+    // GAS側で処理が失敗した場合 (success: false が返ってきた場合)
     if (!result.success) {
-        throw new Error(`GAS returned an error: ${result.message}`);
+        // GASが返した詳細なエラーメッセージを連結して、新しいエラーを生成する
+        const gasErrorMessage = result.error || result.message || 'Unknown GAS Error';
+        // このエラーは呼び出し元のcatchブロックで捕捉される
+        throw new Error(`GAS process failed: ${gasErrorMessage}`);
     }
     console.log(`State for ${gender} saved to Sheet via GAS.`);
 }
