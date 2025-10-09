@@ -386,6 +386,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const classes = ['A', 'B', 'C'];
         classes.forEach(playerClass => {
+            // --- 種目別順位を先に計算 ---
+            const eventRanks = {};
+            EVENTS.forEach(event => {
+                // 各種目ごとに選手を降順でソート
+                const sortedByEvent = appState.players
+                    .filter(p => p.playerClass === playerClass)
+                    .sort((a, b) => b[event] - a[event]);
+                // 選手名と順位のマップを作成
+                eventRanks[event] = new Map(sortedByEvent.map((p, i) => [p.name, i + 1]));
+            });
+
             const classPlayers = appState.players.filter(p => p.playerClass === playerClass).sort((a, b) => b.total - a.total);
             if (classPlayers.length > 0) {
                 const page = document.createElement('div');
@@ -406,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <td>${index + 1}</td>
                                     <td>${p.name}</td>
                                     <td>${p.playerGroup}</td>
-                                    ${EVENTS.map(e => `<td>${p[e].toFixed(3)}</td>`).join('')}
+                                    ${EVENTS.map(e => `<td>${p[e].toFixed(3)} (${eventRanks[e].get(p.name)})</td>`).join('')}
                                     <td>${p.total.toFixed(3)}</td>
                                 </tr>
                             `).join('')}
