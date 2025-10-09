@@ -14,7 +14,7 @@ const MEN_EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
 const dom = {};
 function cacheDOMElements() {
     const ids = [
-        'competitionName', 'lastUpdated', 'playerSearchInput', 'classTabs', 'rankingTypeSelect',
+        'competitionName', 'lastUpdated', 'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
@@ -32,10 +32,6 @@ function setupEventListeners() {
     });
     dom.rankingTypeSelect.addEventListener('change', (e) => {
         appState.ui.rankingType = e.target.value;
-        renderAll();
-    });
-    dom.playerSearchInput.addEventListener('input', (e) => {
-        appState.ui.searchTerm = e.target.value.trim();
         renderAll();
     });
 }
@@ -81,7 +77,7 @@ function renderCompetitionName() {
     const name = appState.competitionName || '大会結果速報 (男子)';
     dom.competitionName.textContent = name;
     if (dom.lastUpdated) {
-        dom.lastUpdated.textContent = appState.lastUpdated ? `(最終更新: ${appState.lastUpdated})` : '';
+        dom.lastUpdated.textContent = appState.lastUpdated ? `最終更新: ${appState.lastUpdated}` : '';
     }
     document.title = name;
 }
@@ -108,15 +104,14 @@ function renderTotalRanking() {
     ['C', 'B', 'A'].forEach(classVal => {
         const tbody = dom[`class${classVal}_playersTable`]?.querySelector('tbody');
         if (!tbody) return;
-        const searchTerm = appState.ui.searchTerm || '';
-        const sortedPlayers = appState.players.filter(p => p.playerClass === classVal)
-            .filter(p => p.name.includes(searchTerm)).sort((a, b) => b.total - a.total);
+        const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
         let rank = 1;
         for (let i = 0; i < sortedPlayers.length; i++) {
             const p = sortedPlayers[i];
+            // デンソランキング
             if (i > 0 && p.total < sortedPlayers[i - 1].total) {
-                rank = i + 1;
+                rank++;
             }
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.total.toFixed(3)}</td>`;
@@ -133,16 +128,15 @@ function renderEventRanking() {
             const eventDiv = classContentDiv.querySelector(`.event-rank-wrapper > div[data-event="${eventVal}"]`);
             if (!eventDiv) return;
             const tbody = eventDiv.querySelector('table > tbody');
-            const searchTerm = appState.ui.searchTerm || '';
-            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal)
-                .filter(p => p.name.includes(searchTerm)).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
+            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
             tbody.innerHTML = '';
             let rank = 1;
             for (let i = 0; i < sortedPlayers.length; i++) {
                 const p = sortedPlayers[i];
                 const currentScore = p[eventVal] || 0;
+                // デンソランキング
                 if (i > 0 && currentScore < (sortedPlayers[i - 1][eventVal] || 0)) {
-                    rank = i + 1;
+                    rank++;
                 }
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${currentScore.toFixed(3)}</td>`;
