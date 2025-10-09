@@ -47,9 +47,22 @@
             <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
         <hr style="margin: 1.5em 0;">
+        <div id="addPlayerSection" style="margin-bottom:1em;">
+            <label>選手を個別に追加:</label>
+            <input type="text" id="newPlayerName" placeholder="選手名">
+            <select id="newPlayerClass"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select>
+            <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
+            <button id="addPlayerBtn">選手を追加</button>
+        </div>
+        <hr style="margin: 1.5em 0;">
         <div style="display:flex; align-items:center; gap:1em;">
             <label>クラス: <select id="inputClassSelect"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select></label>
             <label>組: <select id="inputGroupSelect"></select></label>
+            <div class="reorder-switch" style="margin-left: auto;">
+                <label for="reorderModeToggle">並び替えモード:</label>
+                <input type="checkbox" id="reorderModeToggle">
+                <span>OFF</span>
+            </div>
         </div>
         <div id="inputPlayersArea" style="margin-top:1em;"></div>
         <button id="inputScoreSubmitBtn" style="margin-top:1em;">点数一括登録</button>
@@ -157,6 +170,8 @@
         </div>
     </div>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- ドラッグ＆ドロップライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="app_men.js"></script>
     <script>
         // 自動保存機能の追加

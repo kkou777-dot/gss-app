@@ -44,6 +44,29 @@ tbody tr:nth-child(even) { background-color: #f9f9f9; }
 .score-inputs { display: flex; flex-wrap: wrap; gap: 1em; }
 .score-inputs input { width: 5em; }
 
+/* 並び替え機能のスタイル */
+.reorder-handle {
+  display: none; /* 並び替えモードOFFのときは非表示 */
+  cursor: grab;
+  color: #aaa;
+  margin-right: 10px;
+  font-size: 1.5em;
+  line-height: 1;
+}
+.reorder-mode .reorder-handle {
+  display: inline-block; /* 並び替えモードONのときだけ表示 */
+}
+.reorder-mode .player-input-row {
+  background-color: #fef9e7;
+  border: 1px dashed #f1c40f;
+}
+.sortable-ghost {
+  opacity: 0.4;
+  background: #c8ebfb;
+}
+
+
+
 button, input[type="file"]::file-selector-button {
   color: white;
   border: none;

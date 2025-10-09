@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         targetPlayers.forEach(player => {
             const playerRow = document.createElement('div');
+            playerRow.id = `player-row-${player.originalIndex}`;
             playerRow.className = 'player-input-row';
             playerRow.dataset.playerIndex = player.originalIndex;
             let inputsHTML = '';
@@ -132,10 +133,53 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             playerRow.innerHTML = `
+                <span class="reorder-handle">☰</span>
                 <span class="player-name">${player.name}</span>
                 <div class="score-inputs">${inputsHTML}</div>
             `;
             playersArea.appendChild(playerRow);
+        });
+
+        // 並び替えライブラリの初期化
+        initializeSortable(playersArea);
+    }
+
+    let sortable = null;
+    function initializeSortable(container) {
+        if (sortable) {
+            sortable.destroy();
+        }
+        sortable = new Sortable(container, {
+            animation: 150,
+            handle: '.reorder-handle', // ハンドルでドラッグ
+            ghostClass: 'sortable-ghost',
+            disabled: true, // 初期状態では無効
+            onEnd: function (evt) {
+                const { oldIndex, newIndex } = evt;
+                if (oldIndex === newIndex) return;
+
+                // 表示されている選手リストを取得
+                const displayedPlayers = appState.players
+                    .map((p, index) => ({ ...p, originalIndex: index }))
+                    .filter(p => p.playerClass === document.getElementById('inputClassSelect').value && p.playerGroup === document.getElementById('inputGroupSelect').value);
+
+                // ドラッグされた選手の元のインデックスを取得
+                const movedPlayerOriginalIndex = displayedPlayers[oldIndex].originalIndex;
+                // 移動先の位置にある選手の元のインデックスを取得
+                const targetPlayerOriginalIndex = displayedPlayers[newIndex].originalIndex;
+
+                // appState.players 配列内での実際のインデックスを探す
+                const actualOldIndex = appState.players.findIndex(p => p.originalIndex === movedPlayerOriginalIndex);
+                const actualTargetIndex = appState.players.findIndex(p => p.originalIndex === targetPlayerOriginalIndex);
+
+                // 配列の要素を移動
+                const [movedItem] = appState.players.splice(actualOldIndex, 1);
+                appState.players.splice(actualTargetIndex, 0, movedItem);
+
+                // UIを更新して自動保存をトリガー
+                updateAllUI();
+                scheduleAutoSave();
+            },
         });
     }
 
@@ -262,6 +306,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         reader.readAsText(file);
+    });
+
+    // 選手追加ボタン
+    document.getElementById('addPlayerBtn').addEventListener('click', () => {
+        const nameInput = document.getElementById('newPlayerName');
+        const classSelect = document.getElementById('newPlayerClass');
+        const groupInput = document.getElementById('newPlayerGroup');
+
+        const name = nameInput.value.trim();
+        const playerClass = classSelect.value;
+        const playerGroup = groupInput.value.trim();
+
+        if (!name) {
+            alert('選手名を入力してください。');
+            return;
+        }
+
+        const newPlayer = {
+            name: name,
+            playerClass: playerClass,
+            playerGroup: playerGroup,
+            floor: 0, pommel: 0, rings: 0, vault: 0, pbars: 0, hbar: 0, total: 0
+        };
+
+        appState.players.push(newPlayer);
+        updateAllUI();
+
+        // 入力欄をクリア
+        nameInput.value = '';
+        groupInput.value = '';
+        alert(`${name}さんを追加しました。`);
+    });
+
+    // 並び替えモードのトグル
+    const reorderToggle = document.getElementById('reorderModeToggle');
+    reorderToggle.addEventListener('change', (e) => {
+        const isEnabled = e.target.checked;
+        const playersArea = document.getElementById('inputPlayersArea');
+        const toggleLabel = document.querySelector('.reorder-switch span');
+
+        sortable.option('disabled', !isEnabled); // SortableJSの有効/無効を切り替え
+        playersArea.classList.toggle('reorder-mode', isEnabled);
+        toggleLabel.textContent = isEnabled ? 'ON' : 'OFF';
+        toggleLabel.style.color = isEnabled ? 'red' : 'black';
     });
 
     function setupTabs(tabContainerId) {
