@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>点数入力 (男子)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <style>
+      /* 男子用テーマカラー */
+      body { background-color: #f0f8ff; color: #37474f; }
+      h1, h3, h4 { color: #1565c0; }
+      .input-section { border-color: #90caf9; }
+      button { background-color: #1976d2; }
+      button:hover { background-color: #1565c0; }
+      input, select { border-color: #90caf9; }
+      .back-button { background-color: #6c757d; }
+      .back-button:hover { background-color: #5a6268; }
+    </style>
+</head>
+<body>
+    <h1>
+        <span id="competitionName">点数入力 (男子)</span>
+    </h1>
+    <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
+    <div class="save-container" style="margin-bottom: 1em;">
+        <button id="saveButton" style="display: none;">スプレッドシートに保存</button>
+        <span id="saveStatus" style="color: green; font-weight: bold;"></span>
+    </div>
+
+    <div class="input-section">
+        <div style="display:flex; align-items:center; gap:1em; flex-wrap: wrap;">
+            <label>クラス: <select id="inputClassSelect"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select></label>
+            <label>組: <select id="inputGroupSelect"></select></label>
+            <div class="reorder-switch" style="margin-left: auto;">
+                <label for="reorderModeToggle">並び替えモード:</label>
+                <input type="checkbox" id="reorderModeToggle">
+                <span>OFF</span>
+            </div>
+        </div>
+        <div id="inputPlayersArea" style="margin-top:1em;"></div>
+        <button id="inputScoreSubmitBtn" style="margin-top:1em;">点数一括登録</button>
+    </div>
+
+    <div style="margin-top: 2em;">
+        <button class="back-button" onclick="location.href='index_men.html'">運営トップに戻る</button>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Created by KOU</p>
+    </footer>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <!-- ドラッグ＆ドロップライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="app_men.js"></script>
+    <script>
+        // 自動保存機能の追加
+        let autoSaveTimer = null;
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const saveButton = document.getElementById('saveButton');
+                if (saveButton) saveButton.click();
+            }, 3000); // 3秒後に保存
+        }
+        document.body.addEventListener('input', (e) => { if(e.target.type === 'number' || e.target.id === 'competitionNameInput') scheduleAutoSave(); });
+    </script>
+</body>
+</html>

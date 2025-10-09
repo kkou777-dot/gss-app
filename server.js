@@ -96,6 +96,15 @@ app.get('/viewer_men', (req, res) => {
   res.sendFile(path.join(__dirname, 'viewer_men.html'));
 });
 
+// 点数入力ページへのルーティングを追加
+app.get('/input', (req, res) => {
+  res.sendFile(path.join(__dirname, 'input.html'));
+});
+
+app.get('/input_men', (req, res) => {
+  res.sendFile(path.join(__dirname, 'input_men.html'));
+});
+
 // (オプション) /men でも男子ページにアクセスできるようにする
 app.get('/men', (req, res) => {
   res.sendFile(path.join(__dirname, 'index_men.html'));

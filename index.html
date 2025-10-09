@@ -44,44 +44,8 @@
         <input type="checkbox" id="finalizeToggle">
         <span id="finalizeStatus" style="font-weight: bold;">進行中</span>
     </div>
-    <div class="input-section">
-        <h3>データ入力</h3>
-        <div style="margin-bottom:1em;">
-            <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
-        </div>
-        <hr style="margin: 1.5em 0;">
-        <div class="csv-upload-area" style="margin-bottom:1em;">
-            <label for="csvInput">CSVファイルから一括登録:</label>
-            <input type="file" id="csvInput" accept=".csv">
-            <button id="csvUploadBtn">CSV読み込み</button>
-            <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
-        </div>
-        <hr style="margin: 1.5em 0;">
-        <div id="addPlayerSection" style="margin-bottom:1em;">
-            <label>選手を個別に追加:</label>
-            <input type="text" id="newPlayerName" placeholder="選手名">
-            <select id="newPlayerClass"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select>
-            <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
-            <button id="addPlayerBtn">選手を追加</button>
-        </div>
-        <hr style="margin: 1.5em 0;">
-        <div style="display:flex; align-items:center; gap:1em;">
-            <label>クラス:
-                <select id="inputClassSelect">
-                    <option value="C">Cクラス</option>
-                    <option value="B">Bクラス</option>
-                    <option value="A">Aクラス</option>
-                </select>
-            </label>
-            <label>組: <select id="inputGroupSelect"></select></label>
-            <div class="reorder-switch" style="margin-left: auto;">
-                <label for="reorderModeToggle">並び替えモード:</label>
-                <input type="checkbox" id="reorderModeToggle">
-                <span>OFF</span>
-            </div>
-        </div>
-        <div id="inputPlayersArea" style="margin-top:1em;"></div>
-        <button id="inputScoreSubmitBtn" style="margin-top:1em;">点数一括登録</button>
+    <div class="input-section" style="text-align: center; padding: 2em;">
+        <button style="padding: 1em 2em; font-size: 1.2em;" onclick="location.href='input.html'">点数入力ページへ</button>
     </div>
 
     <div class="container">
@@ -205,17 +169,5 @@
     <!-- ドラッグ＆ドロップライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="app.js"></script>
-    <script>
-        // 自動保存機能の追加
-        let autoSaveTimer = null;
-        function scheduleAutoSave() {
-            clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(() => {
-                const saveButton = document.getElementById('saveButton');
-                if (saveButton) saveButton.click();
-            }, 3000); // 3秒後に保存
-        }
-        document.body.addEventListener('input', (e) => { if(e.target.type === 'number' || e.target.id === 'competitionNameInput') scheduleAutoSave(); });
-    </script>
 </body>
 </html>
