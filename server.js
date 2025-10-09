@@ -169,11 +169,12 @@ server.listen(PORT, async () => {
 
     // 2. サーバーが起動した後に、データ読み込みを試みる
     console.log("サーバーが起動しました。スプレッドシートから初期データを読み込みます...");
-    try {
-        await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
-        console.log("初期データの読み込みが完了しました。");
-    } catch (err) {
-        console.error("\n\n[警告] サーバー起動時のデータ読み込みに失敗しました。アプリは空の状態で動作します。");
-        console.error(err.message, "\n");
-    }
+    // ★★★ デプロイを安定させるため、起動時のデータ読み込みを一時的に無効化 ★★★
+    // try {
+    //     await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
+    //     console.log("初期データの読み込みが完了しました。");
+    // } catch (err) {
+    //     console.error("\n\n[警告] サーバー起動時のデータ読み込みに失敗しました。アプリは空の状態で動作します。");
+    //     console.error(err.message, "\n");
+    // }
 });
