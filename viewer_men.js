@@ -14,7 +14,7 @@ const MEN_EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
 const dom = {};
 function cacheDOMElements() {
     const ids = [
-        'competitionName', 'lastUpdated', 'classTabs', 'rankingTypeSelect',
+        'competitionName', 'lastUpdated', 'playerSearchInput', 'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
@@ -32,6 +32,10 @@ function setupEventListeners() {
     });
     dom.rankingTypeSelect.addEventListener('change', (e) => {
         appState.ui.rankingType = e.target.value;
+        renderAll();
+    });
+    dom.playerSearchInput.addEventListener('input', (e) => {
+        appState.ui.searchTerm = e.target.value.trim();
         renderAll();
     });
 }
@@ -104,7 +108,9 @@ function renderTotalRanking() {
     ['C', 'B', 'A'].forEach(classVal => {
         const tbody = dom[`class${classVal}_playersTable`]?.querySelector('tbody');
         if (!tbody) return;
-        const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => b.total - a.total);
+        const searchTerm = appState.ui.searchTerm || '';
+        const sortedPlayers = appState.players.filter(p => p.playerClass === classVal)
+            .filter(p => p.name.includes(searchTerm)).sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
         let rank = 1;
         for (let i = 0; i < sortedPlayers.length; i++) {
@@ -127,7 +133,9 @@ function renderEventRanking() {
             const eventDiv = classContentDiv.querySelector(`.event-rank-wrapper > div[data-event="${eventVal}"]`);
             if (!eventDiv) return;
             const tbody = eventDiv.querySelector('table > tbody');
-            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
+            const searchTerm = appState.ui.searchTerm || '';
+            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal)
+                .filter(p => p.name.includes(searchTerm)).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
             tbody.innerHTML = '';
             let rank = 1;
             for (let i = 0; i < sortedPlayers.length; i++) {

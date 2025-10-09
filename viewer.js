@@ -13,7 +13,7 @@ let appState = {
 const dom = {};
 function cacheDOMElements() {
     const ids = [
-        'competitionName', 'lastUpdated',
+        'competitionName', 'lastUpdated', 'playerSearchInput',
         'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
@@ -33,6 +33,11 @@ function setupEventListeners() {
 
     dom.rankingTypeSelect.addEventListener('change', (e) => {
         appState.ui.rankingType = e.target.value;
+        renderAll();
+    });
+
+    dom.playerSearchInput.addEventListener('input', (e) => {
+        appState.ui.searchTerm = e.target.value.trim();
         renderAll();
     });
 }
@@ -138,8 +143,10 @@ function renderTotalRanking() {
         if (!table) return;
         const tbody = table.querySelector('tbody');
 
+        const searchTerm = appState.ui.searchTerm || '';
         const sortedPlayers = appState.players
             .filter(p => p.playerClass === classVal)
+            .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
             .sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
         let rank = 1;
@@ -169,8 +176,10 @@ function renderEventRanking() {
             if (!eventDiv) return;
 
             const tbody = eventDiv.querySelector('table > tbody');
+            const searchTerm = appState.ui.searchTerm || '';
             const sortedPlayers = appState.players
                 .filter(p => p.playerClass === classVal)
+                .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
                 .sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
 
             tbody.innerHTML = '';
