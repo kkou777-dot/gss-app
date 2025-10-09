@@ -416,79 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs('totalRankTabs');
     setupTabs('eventRankTabs');
 
-    const container = document.querySelector('.container');
-    if (container) container.addEventListener('click', (e) => {
+    // 編集ボタンのクリックイベントを .container に委譲
+    document.querySelector('.container')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
-            const playerIndex = parseInt(e.target.dataset.playerIndex, 10);
-            const player = appState.players[playerIndex];
-            openEditModal(player, playerIndex);
+            const player = appState.players[e.target.dataset.playerIndex];
+            if (player) {
+                location.href = `input_men.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`;
+            }
         }
     });
-
-    function openEditModal(player, playerIndex) {
-        const oldModal = document.getElementById('editModal');
-        if (oldModal) oldModal.remove();
-
-        const modal = document.createElement('div');
-        modal.id = 'editModal';
-        modal.className = 'modal';
-        modal.style.display = 'block';
-
-        let inputsHTML = '';
-        EVENTS.forEach(event => {
-            inputsHTML += `
-                <label>${EVENT_NAMES[event]}:
-                    <input type="number" id="edit_${event}" value="${player[event] || ''}" placeholder="0" step="0.001">
-                </label><br>`;
-        });
-
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close-button" id="closeEditModal">&times;</span>
-                <h3>${player.name} のスコア編集</h3>
-                <label>名前: <input type="text" id="edit_name" value="${player.name}"></label><br>
-                <label>クラス: <input type="text" id="edit_playerClass" value="${player.playerClass}"></label><br>
-                <label>組: <input type="text" id="edit_playerGroup" value="${player.playerGroup}"></label><br>
-                <hr>
-                ${inputsHTML}
-                <hr>
-                <button id="saveEditBtn">変更を保存</button>
-                <button id="deletePlayerBtn" style="background-color: #d32f2f;">選手を削除</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-        document.getElementById('closeEditModal').onclick = () => modal.style.display = 'none';
-        modal.onclick = (event) => { if (event.target == modal) { modal.style.display = 'none'; } };
-
-        document.getElementById('saveEditBtn').onclick = () => {
-            const editedPlayer = appState.players[playerIndex];
-            editedPlayer.name = document.getElementById('edit_name').value;
-            editedPlayer.playerClass = document.getElementById('edit_playerClass').value;
-            editedPlayer.playerGroup = document.getElementById('edit_playerGroup').value;
-
-            let total = 0;
-            EVENTS.forEach(event => {
-                const score = parseFloat(document.getElementById(`edit_${event}`).value) || 0;
-                editedPlayer[event] = score;
-                total += score;
-            });
-            editedPlayer.total = total;
-
-            updateAllUI();
-            // 変更を保存するために自動保存をトリガー
-            scheduleAutoSave();
-            modal.style.display = 'none';
-        };
-
-        document.getElementById('deletePlayerBtn').onclick = () => {
-            if (confirm(`${player.name}さんを削除しますか？この操作は元に戻せません。`)) {
-                appState.players.splice(playerIndex, 1);
-                updateAllUI();
-                modal.style.display = 'none';
-            }
-        };
-    }
 
     const csvHelpBtn = document.getElementById('csvHelpBtn');
     if (csvHelpBtn) {
@@ -558,4 +494,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Enterキーでの移動機能を有効化
     setupEnterKeyNavigation();
+
+    // URLパラメータをチェックして、特定のクラス/組を表示
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetClass = urlParams.get('class');
+    const targetGroup = urlParams.get('group');
+    if (targetClass && targetGroup) {
+        const classSelect = document.getElementById('inputClassSelect');
+        const groupSelect = document.getElementById('inputGroupSelect');
+        if (classSelect) classSelect.value = targetClass;
+        setTimeout(() => { if (groupSelect) groupSelect.value = targetGroup; updateInputArea(); }, 100);
+    }
 });
