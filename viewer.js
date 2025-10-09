@@ -46,13 +46,10 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     cacheDOMElements();
     setupEventListeners();
-
-    const socket = io('https://gymnastics-score-app.onrender.com', {
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
+    const socket = io({
+        // Render.comのスリープ対策
+        transports: ['websocket', 'polling']
     });
-
     setupSocketEventListeners(socket);
 });
 
