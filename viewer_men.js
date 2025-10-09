@@ -53,6 +53,7 @@ function setupSocketEventListeners(socket) {
     });
     socket.on('stateUpdateMen', (newState) => {
         console.log('State received from server (Men)');
+        appState.competitionName = newState.competitionName;
         appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
         renderAll();
