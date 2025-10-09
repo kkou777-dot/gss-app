@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <table border="1" style="width:100%; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th>順位</th><th>名前</th><th>組</th>
+                                <th>順位</th><th>名前</th>
                                 ${EVENTS.map(e => `<th>${EVENT_NAMES[e]}</th>`).join('')}
                                 <th>合計</th>
                             </tr>
@@ -416,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td>${p.name}</td>
-                                    <td>${p.playerGroup}</td>
                                     ${EVENTS.map(e => `<td>${p[e].toFixed(3)} (${eventRanks[e].get(p.name)})</td>`).join('')}
                                     <td>${p.total.toFixed(3)}</td>
                                 </tr>
