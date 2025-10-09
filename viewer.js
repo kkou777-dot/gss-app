@@ -136,7 +136,6 @@ function renderTotalRanking() {
         const sortedPlayers = appState.players
             .filter(p => p.playerClass === classVal)
             .sort((a, b) => b.total - a.total);
-
         tbody.innerHTML = '';
         let rank = 1;
         let lastScore = -1;
