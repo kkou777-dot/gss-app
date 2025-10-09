@@ -1,6 +1,7 @@
 // --- アプリケーションの状態管理 ---
 const appState = {
     competitionName: '',
+    lastUpdated: '',
     players: [],
     ui: {
         selectedClass: 'C',
@@ -13,7 +14,7 @@ const MEN_EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
 const dom = {};
 function cacheDOMElements() {
     const ids = [
-        'competitionName', 'classTabs', 'rankingTypeSelect',
+        'competitionName', 'lastUpdated', 'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
         'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
@@ -52,6 +53,7 @@ function setupSocketEventListeners(socket) {
     });
     socket.on('stateUpdateMen', (newState) => {
         console.log('State received from server (Men)');
+        appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
         renderAll();
     });
@@ -73,6 +75,9 @@ function renderAll() {
 function renderCompetitionName() {
     const name = appState.competitionName || '大会結果速報 (男子)';
     dom.competitionName.textContent = name;
+    if (dom.lastUpdated) {
+        dom.lastUpdated.textContent = appState.lastUpdated ? `最終更新: ${appState.lastUpdated}` : '';
+    }
     document.title = name;
 }
 

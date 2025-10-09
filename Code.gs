@@ -84,6 +84,7 @@ function loadDataFromSheet(gender) {
   // 1. 大会名の読み込み (configシートから)
   const configSheet = doc.getSheetByName('config');
   if (!configSheet) throw new Error("Sheet 'config' not found.");
+  const state = {};
 
   const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
   let nameRow = null;
@@ -96,6 +97,12 @@ function loadDataFromSheet(gender) {
     }
   }
   state.competitionName = nameRow ? nameRow[1] : '';
+
+  // 最終更新日時の読み込み
+  const lastUpdatedKey = gender === 'men' ? 'lastUpdatedMen' : 'lastUpdated';
+  const updatedRow = configData ? configData.find(row => row && row[0] === lastUpdatedKey) : null;
+  state.lastUpdated = updatedRow ? updatedRow[1] : '';
+
 
   // 2. 選手データの読み込み
   const sheetName = gender === 'men' ? 'players_men' : 'players';
@@ -168,6 +175,10 @@ function saveDataToSheet(gender, state) {
     playersSheet.clear(); // 書式ごとクリア
     playersSheet.getRange(1, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
 
+    // 最終更新日時を保存
+    const lastUpdatedKey = gender === 'men' ? 'lastUpdatedMen' : 'lastUpdated';
+    saveConfigValue(doc, lastUpdatedKey, new Date().toLocaleString('ja-JP'));
+
     console.log(`Successfully saved ${state.players.length} players for ${gender}.`);
 
   } finally {
@@ -189,6 +200,20 @@ function saveCompetitionName(doc, gender, competitionName) {
   } else {
     configSheet.appendRow([competitionNameKey, competitionName]);
   }
+}
+
+/**
+ * configシートに指定されたキーと値を保存する汎用関数
+ */
+function saveConfigValue(doc, key, value) {
+    const configSheet = doc.getSheetByName('config') || doc.insertSheet('config');
+    const configData = configSheet.getDataRange().getValues();
+    const rowIndex = configData.findIndex(row => row[0] === key);
+    if (rowIndex > -1) {
+        configSheet.getRange(rowIndex + 1, 2).setValue(value);
+    } else {
+        configSheet.appendRow([key, value]);
+    }
 }
 
 /**

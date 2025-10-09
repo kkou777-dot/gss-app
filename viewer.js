@@ -1,6 +1,7 @@
 // --- DOM要素のキャッシュ ---
 let appState = {
     competitionName: '',
+    lastUpdated: '',
     players: [],
     ui: {
         selectedClass: 'C',
@@ -12,7 +13,7 @@ let appState = {
 const dom = {};
 function cacheDOMElements() {
     const ids = [
-        'competitionName',
+        'competitionName', 'lastUpdated',
         'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
@@ -63,6 +64,7 @@ function setupSocketEventListeners(socket) {
     socket.on('stateUpdate', (newState) => {
         console.log('State received from server');
         // appState.competitionName = newState.competitionName; // 閲覧ページでは大会名を上書きしない
+        appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
         renderAll();
     });
@@ -94,6 +96,9 @@ function renderAll() {
 function renderCompetitionName() {
     const name = appState.competitionName || '大会結果速報';
     dom.competitionName.textContent = name;
+    if (dom.lastUpdated) {
+        dom.lastUpdated.textContent = appState.lastUpdated ? `最終更新: ${appState.lastUpdated}` : '';
+    }
     document.title = name;
 }
 
