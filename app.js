@@ -124,8 +124,8 @@ function handleSubmitScores() {
         p.total = (p.floor || 0) + (p.vault || 0) + (p.bars || 0) + (p.beam || 0);
     });
 
-    renderAll();
-    saveStateToServer(); // スコア登録後に自動保存
+    renderAll(); // まず画面を更新
+    saveStateToServer(); // サーバーに保存
     alert('点数を登録しました');
 }
 
@@ -144,10 +144,15 @@ function saveStateToServer(data) {
     appState.socket.emit('saveData', stateToSend, (response) => {
         if (response && response.success) {
             dom.saveStatus.textContent = response.message || '自動保存しました';
-            setTimeout(() => dom.saveStatus.textContent = '', 3000);
+            // 3秒後にメッセージを消す
+            setTimeout(() => {
+                // メッセージが「保存中...」でなければ消す
+                if (dom.saveStatus.textContent !== '保存中...') {
+                    dom.saveStatus.textContent = '';
+                }
+            }, 3000);
         } else {
             dom.saveStatus.textContent = (response && response.message) || '自動保存に失敗しました';
-            // エラーメッセージは消さない
         }
     });
 }
@@ -404,6 +409,16 @@ function setupEventListeners() {
         }
     });
 
+    // ページを離れる直前にデータを保存する
+    window.addEventListener('beforeunload', () => {
+        // 変更がある場合のみ保存を実行
+        // この機能は意図しない動作を引き起こす可能性があるため、
+        // 一旦、手動保存を促すメッセージに留めます。
+        // もし未保存のデータがある場合に警告を表示したい場合は、
+        // ここにロジックを追加できますが、現状はシンプルに何もしないようにします。
+        // 例: if (hasUnsavedChanges()) { saveStateToServer(); }
+        // 今回は、このイベントリスナー内の処理を空にします。
+    });
 }
 
 /**
@@ -423,17 +438,34 @@ function prepareForPrint() {
 
         if (playersInClass.length === 0) return; // そのクラスに選手がいなければスキップ
 
-        let rank = 1;
-        const rankedPlayers = playersInClass.map((p, i) => {
+        // 総合順位をここで再計算
+        const rankedPlayers = playersInClass.map((p, i, arr) => {
+            let rank = 1;
             if (i > 0 && (p.total || 0) < (playersInClass[i - 1].total || 0)) {
                 rank = i + 1;
+            } else if (i > 0 && (p.total || 0) === (playersInClass[i - 1].total || 0)) {
+                rank = arr[i-1].rank; // 同点の場合は前の選手の順位と同じ
             }
-            return { ...p, rank };
+            return { ...p, rank: rank };
         });
 
         const pageDiv = document.createElement('div');
         pageDiv.className = 'print-page';
-        let tableHTML = `<h2>${competitionName} - ${classVal}クラス 結果</h2><table><thead><tr><th>順位</th><th>選手名</th><th>床</th><th>跳馬</th><th>段違い</th><th>平均台</th><th>総合得点</th></tr></thead><tbody>`;
+        let tableHTML = `
+            <h2>${competitionName} - ${classVal}クラス 結果</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>順位</th>
+                        <th>選手名</th>
+                        <th>床</th>
+                        <th>跳馬</th>
+                        <th>段違い</th>
+                        <th>平均台</th>
+                        <th>総合得点</th>
+                    </tr>
+                </thead>
+                <tbody>`;
         rankedPlayers.forEach(p => {
             tableHTML += `<tr><td>${p.rank}</td><td>${p.name}</td><td>${(p.floor || 0).toFixed(3)}</td><td>${(p.vault || 0).toFixed(3)}</td><td>${(p.bars || 0).toFixed(3)}</td><td>${(p.beam || 0).toFixed(3)}</td><td>${(p.total || 0).toFixed(3)}</td></tr>`;
         });
@@ -462,7 +494,7 @@ function setupSocketEventListeners(socket) {
     // サーバーから最新の状態を受け取った時の処理
     socket.on('stateUpdate', (newState) => {
         console.log('サーバーから最新の状態を受信しました。UIを初期化します。');
-        appState.players = newState.players || [];
+        appState.players = newState.players || []; // ここで受け取る players には順位情報が含まれている
         appState.competitionName = newState.competitionName || '';
 
         // データ受信後に初めて保存ボタンの機能を有効化する
