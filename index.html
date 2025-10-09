@@ -26,7 +26,11 @@
 
     <h1>
         <span id="competitionName">体操スコアシート (女子)</span>
-        <button type="button" class="switch-gender-btn" onclick="location.href='index_men.html'">男子用に切り替え</button>
+        <div style="display: flex; align-items: center; gap: 1em;">
+            <a href="/viewer" target="_blank" style="font-size: 0.7em;">保護者ページ(女)</a>
+            <a href="/viewer_men" target="_blank" style="font-size: 0.7em;">保護者ページ(男)</a>
+            <button type="button" class="switch-gender-btn" onclick="location.href='index_men.html'">男子用に切り替え</button>
+        </div>
     </h1>
     <!-- サーバー接続状態の表示エリア -->
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
@@ -151,10 +155,6 @@
 
     <footer>
         <p>&copy; 2025 Created by KOU</p>
-        <div class="viewer-links" style="margin-top: 1em; font-size: 0.9em;">
-            <p><strong>保護者用ページ:</strong></p>
-            <a href="/viewer" target="_blank">女子用 閲覧ページ</a> | <a href="/viewer_men" target="_blank">男子用 閲覧ページ</a>
-        </div>
     </footer>
 
     <!-- CSVヘルプモーダル -->
