@@ -149,7 +149,6 @@ function renderTotalRanking() {
             tr.innerHTML = `
                 <td>${rank}</td>
                 <td>${p.name}</td>
-                <td>${p.playerGroup}</td>
                 <td>${p.total.toFixed(3)}</td>
             `;
             tbody.appendChild(tr);

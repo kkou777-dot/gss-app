@@ -104,7 +104,7 @@ function renderTotalRanking() {
         sortedPlayers.forEach((p, i) => {
             if (i > 0 && p.total < sortedPlayers[i - 1].total) rank = i + 1;
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.playerGroup}</td><td>${p.total.toFixed(3)}</td>`;
+            tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.total.toFixed(3)}</td>`;
             tbody.appendChild(tr);
         });
     });
@@ -130,4 +130,3 @@ function renderEventRanking() {
         });
     });
 }
-
