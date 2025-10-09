@@ -69,13 +69,19 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
 async function saveStateToSheet(gender) {
     const state = appStates[gender];
     // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
-    const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: state });
+    const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: state, action: 'save' });
 
     const result = response.data;
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
     // ここに到達した時点でHTTP通信は成功している。
     // GAS内部での処理失敗(success: false)も、GAS側で500エラーを返す設計なので、ここでは考慮不要。
     console.log(`State for ${gender} saved to Sheet via GAS.`);
+}
+
+async function archiveSheetOnGAS(gender) {
+    const state = appStates[gender];
+    await axios.post(GAS_WEB_APP_URL, { gender, newState: state, action: 'archive' });
+    console.log(`Archive request for ${gender} sent to GAS.`);
 }
 
 // 静的ファイルを提供 (html, js, cssなど)
@@ -153,6 +159,16 @@ io.on('connection', async (socket) => {
         // 保存に失敗したことをリクエスト元のクライアントに通知
         if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
     }
+  });
+
+  // 大会終了リクエスト
+  socket.on('finalizeCompetition', async ({ gender }) => {
+      try {
+          await archiveSheetOnGAS(gender);
+          console.log(`Competition for ${gender} finalized successfully.`);
+      } catch (error) {
+          console.error(`Error finalizing competition for ${gender}:`, error.message);
+      }
   });
 
   socket.on('disconnect', () => {

@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveButton = document.getElementById('saveButton');
     const saveStatus = document.getElementById('saveStatus');
     const connectionStatus = document.getElementById('connectionStatus');
+    const finalizeToggle = document.getElementById('finalizeToggle');
 
     // --- Socket.IO Event Handlers ---
     socket.on('connect', () => {
@@ -360,6 +361,37 @@ document.addEventListener('DOMContentLoaded', () => {
         groupInput.value = '';
         alert(`${name}さんを追加しました。`);
     });
+
+    // 大会終了トグル
+    finalizeToggle.addEventListener('change', (e) => {
+        const isFinalized = e.target.checked;
+        if (isFinalized) {
+            if (confirm('本当に大会を終了しますか？\n現在のデータが新しいシートにバックアップされ、入力がロックされます。')) {
+                // サーバーに大会終了を通知
+                socket.emit('finalizeCompetition', { gender: GENDER });
+                appState.isFinalized = true;
+                lockUI(true);
+            } else {
+                e.target.checked = false; // キャンセルされたらチェックを戻す
+            }
+        } else {
+            appState.isFinalized = false;
+            lockUI(false);
+        }
+    });
+
+    function lockUI(isLocked) {
+        document.getElementById('finalizeStatus').textContent = isLocked ? '終了' : '進行中';
+        // すべての入力フィールドとボタンをロック/解除
+        const elementsToLock = document.querySelectorAll(
+            '#competitionNameInput, #csvInput, #csvUploadBtn, #addPlayerBtn, #newPlayerName, #newPlayerClass, #newPlayerGroup, #inputScoreSubmitBtn, .score-input, .edit-btn, #reorderModeToggle'
+        );
+        elementsToLock.forEach(el => {
+            el.disabled = isLocked;
+        });
+        // 並び替えモードも強制的にOFFにする
+        if (isLocked) reorderToggle.checked = false;
+    }
 
     // 並び替えモードのトグル
     const reorderToggle = document.getElementById('reorderModeToggle');

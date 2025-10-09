@@ -46,6 +46,11 @@ function doPost(e) {
       throw new Error('Invalid request body. "gender" and "newState" (with "competitionName" and "players") are required.');
     }
 
+    // 大会終了処理
+    if (requestBody.action === 'archive') {
+      archiveSheet(gender, newState.competitionName);
+    }
+
     // 本来の保存処理を呼び出す
     saveDataToSheet(gender, newState);
 
@@ -183,5 +188,28 @@ function saveCompetitionName(doc, gender, competitionName) {
     configSheet.getRange(nameRowIndex + 1, 2).setValue(competitionName);
   } else {
     configSheet.appendRow([competitionNameKey, competitionName]);
+  }
+}
+
+/**
+ * 指定されたシートをコピーして、大会記録としてアーカイブする。
+ * @param {string} gender - 'women' または 'men'
+ * @param {string} competitionName - アーカイブ名に使用する大会名
+ */
+function archiveSheet(gender, competitionName) {
+  const doc = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetName = gender === 'men' ? 'players_men' : 'players';
+  const sourceSheet = doc.getSheetByName(sheetName);
+
+  if (sourceSheet) {
+    const date = new Date();
+    const formattedDate = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+    // アーカイブ用のシート名を作成 (例: 20250101_○○大会)
+    const archiveSheetName = `${formattedDate}_${competitionName || '大会記録'}`;
+
+    // シートをコピーして新しい名前を付ける
+    const newSheet = sourceSheet.copyTo(doc);
+    newSheet.setName(archiveSheetName);
+    console.log(`Sheet '${sheetName}' was archived as '${archiveSheetName}'.`);
   }
 }
