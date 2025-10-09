@@ -361,5 +361,17 @@
     <!-- ローカルファイルとして開いても動作するように、CDNからライブラリを読み込みます -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="app.js"></script>
+    <script>
+        // 自動保存機能の追加
+        let autoSaveTimer = null;
+        function scheduleAutoSave() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const saveButton = document.getElementById('saveButton');
+                if (saveButton) saveButton.click();
+            }, 3000); // 3秒後に保存
+        }
+        document.body.addEventListener('input', (e) => { if(e.target.type === 'number' || e.target.id === 'competitionNameInput') scheduleAutoSave(); });
+    </script>
 </body>
 </html>
