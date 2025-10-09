@@ -135,12 +135,14 @@ io.on('connection', async (socket) => {
         io.emit(eventName, appStates[gender]); // 対応するクライアントに最新情報を送信
         if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
     } catch (error) {
-        let errorMessage = error.message;
+        let errorMessage;
         // axiosからのHTTPエラーの場合、GASが返した詳細なエラー情報が含まれている可能性がある
         if (error.response && error.response.data) {
             // GASが返したエラーオブジェクトを文字列化してログに残す
             const gasError = error.response.data.error || JSON.stringify(error.response.data);
             errorMessage = `GAS Error (status: ${error.response.status}): ${gasError}`;
+        } else {
+            errorMessage = error.message;
         }
 
         console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, errorMessage);
