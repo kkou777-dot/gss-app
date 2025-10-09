@@ -77,7 +77,7 @@ function renderCompetitionName() {
     const name = appState.competitionName || '大会結果速報 (男子)';
     dom.competitionName.textContent = name;
     if (dom.lastUpdated) {
-        dom.lastUpdated.textContent = appState.lastUpdated ? `最終更新: ${appState.lastUpdated}` : '';
+        dom.lastUpdated.textContent = appState.lastUpdated ? `(最終更新: ${appState.lastUpdated})` : '';
     }
     document.title = name;
 }
