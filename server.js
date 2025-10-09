@@ -189,18 +189,18 @@ io.on('connection', async (socket) => {
 const PORT = process.env.PORT || 3000;
 
 // 1. 最初にサーバーを起動させる
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     console.log(`Server listening on port ${PORT}`);
     
     // 2. サーバー起動後に、バックグラウンドで初期データを読み込む
-    // この処理はサーバーの起動を妨げない
-    console.log("サーバーが起動しました。バックグラウンドで初期データを読み込みます...");
-    (async () => {
-        try {
-            await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
-            console.log("初期データの読み込みが完了しました。");
-        } catch (err) {
-            console.error("\n\n[警告] 初期データの読み込みに失敗しました。アプリは空の状態で動作を続けます。", err.message, "\n");
-        }
-    })();
+    // デプロイを安定させるため、少し待ってから実行する
+    console.log("サーバーが起動しました。3秒後に初期データの読み込みを開始します...");
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    try {
+        await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
+        console.log("初期データの読み込みが完了しました。");
+    } catch (err) {
+        console.error("\n\n[警告] 初期データの読み込みに失敗しました。アプリは空の状態で動作を続けます。", err.message, "\n");
+    }
 });
