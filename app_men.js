@@ -1,371 +1,364 @@
-// --- DOM要素のキャッシュ ---
-const dom = {};
-
-// --- アプリケーションの状態管理 ---
-const appState = {
-    socket: null,
-    competitionName: '',
-    players: [], // { name, playerClass, playerGroup, floor, pommel, rings, vault, pbars, hbar, total }
-    ui: {
-        totalRankClass: 'C',
-        eventRankClass: 'C',
-    }
-};
-const MEN_EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
-
-function cacheDOMElements() {
-    const ids = [
-        'csvInput', 'csvUploadBtn', 'inputClassSelect', 'inputGroupSelect',
-        'inputPlayersArea', 'inputScoreSubmitBtn', 'totalRankTabs', 'eventRankTabs',
-        'printBtn', 'competitionNameInput', 'competitionName',
-        'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
-        'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
-        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A', 'saveButton',
-        'saveStatus', 'connectionStatus', 'print-container',
-        'csvHelpBtn', 'csvHelpModal', 'closeCsvHelpModal'
-    ];
-    // 男子用の種目別ランキングテーブルIDを動的に追加
-    ['C', 'B', 'A'].forEach(cls => {
-        MEN_EVENTS.forEach(evt => {
-            ids.push(`eventRankContent_${cls}_${evt}`);
-        });
-    });
-    ids.forEach(id => dom[id] = document.getElementById(id)); // ここは変更不要
-}
-
-function handleCsvUpload() {
-    if (!dom.csvInput.files.length) {
-        alert('CSVファイルを選択してください。');
-        return;
-    }
-    const file = dom.csvInput.files[0];
-    const reader = new FileReader();
-    reader.onerror = () => { alert(`ファイルの読み込みに失敗しました: ${reader.error}`); console.error('FileReader error:', reader.error); };
-    reader.onload = (e) => {
-        const result = parseCSV(e.target.result);
-        if (result.newPlayers.length > 0) {
-            appState.players = result.newPlayers;
-            renderAll();
-            saveStateToServer();
-        }
-        let message = `${result.newPlayers.length}名の選手データを読み込みました。`;
-        if (result.errors.length > 0) {
-            message += `\n\n以下の${result.errors.length}件のエラーが見つかりました：\n`;
-            message += result.errors.map(err => `- ${err.lineNumber}行目: ${err.message}`).join('\n');
-        }
-        alert(message);
-        dom.csvInput.value = '';
+document.addEventListener('DOMContentLoaded', () => {
+    const GENDER = 'men';
+    const EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
+    const EVENT_NAMES = {
+        floor: '床',
+        pommel: 'あん馬',
+        rings: 'つり輪',
+        vault: '跳馬',
+        pbars: '平行棒',
+        hbar: '鉄棒'
     };
-    reader.readAsText(file, 'Shift_JIS');
-}
 
-function parseCSV(text) {
-    const lines = text.trim().split(/\r?\n/).slice(1);
-    const newPlayers = [];
-    const errors = [];
-    lines.forEach((line, index) => {
-        const lineNumber = index + 2;
-        const cols = line.split(',');
-        if (cols.length < 10) {
-            errors.push({ lineNumber, message: '列の数が不足しています(男子は10列必要)。' });
-            return;
-        }
-        const playerClass = cols[0].trim();
-        let playerGroup = cols[1].trim();
-        if (/^\d+$/.test(playerGroup)) playerGroup += '組';
-        const name = cols[3].trim();
-        if (!name || !playerClass || !playerGroup) {
-            errors.push({ lineNumber, message: 'クラス、組、または選手名が空です。' });
-            return;
-        }
-        const scores = {};
-        MEN_EVENTS.forEach((event, i) => {
-            scores[event] = parseFloat(cols[4 + i]) || 0;
-        });
-        const total = MEN_EVENTS.reduce((sum, event) => sum + scores[event], 0);
-        newPlayers.push({ name, playerClass, playerGroup, ...scores, total });
-    });
-    return { newPlayers, errors };
-}
-
-function handleSubmitScores() {
-    const inputs = dom.inputPlayersArea.querySelectorAll('input[type="number"]');
-    inputs.forEach(input => {
-        const index = parseInt(input.dataset.index, 10);
-        const event = input.dataset.event;
-        const value = parseFloat(input.value) || 0;
-        if (!isNaN(index) && event && appState.players[index]) {
-            appState.players[index][event] = value;
-        }
-    });
-    appState.players.forEach(p => {
-        p.total = MEN_EVENTS.reduce((sum, event) => sum + (p[event] || 0), 0);
-    });
-    renderAll();
-    saveStateToServer();
-    alert('点数を登録しました');
-}
-
-function saveStateToServer(data) {
-    if (!appState.socket) return;
-    dom.saveStatus.textContent = '保存中...';
-    const stateToSend = data || { competitionName: appState.competitionName, players: appState.players };
-    appState.socket.emit('saveDataMen', stateToSend, (response) => { // 男子用イベントを送信
-        if (response && response.success) {
-            dom.saveStatus.textContent = response.message || '自動保存しました';
-            // 3秒後にメッセージを消す
-            setTimeout(() => {
-                if (dom.saveStatus.textContent !== '保存中...') {
-                    dom.saveStatus.textContent = '';
-                }
-            }, 3000);
-        } else {
-            dom.saveStatus.textContent = (response && response.message) || '自動保存に失敗しました';
-        }
-    });
-}
-
-function renderAll() {
-    renderCompetitionName();
-    renderGroupOptions();
-    renderInputPlayersArea();
-    renderTotalRanking();
-    renderEventRanking();
-}
-
-function renderGroupOptions() {
-    const classVal = dom.inputClassSelect.value;
-    const groups = [...new Set(appState.players.filter(p => p.playerClass === classVal).map(p => p.playerGroup))].sort();
-    dom.inputGroupSelect.innerHTML = '';
-    groups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group;
-        option.textContent = group;
-        dom.inputGroupSelect.appendChild(option);
-    });
-}
-
-function renderCompetitionName() {
-    const name = appState.competitionName || '体操スコアシート (男子)';
-    dom.competitionName.textContent = name;
-    dom.competitionNameInput.value = appState.competitionName;
-    document.title = name;
-}
-
-function renderInputPlayersArea() {
-    const classVal = dom.inputClassSelect.value;
-    const groupVal = dom.inputGroupSelect.value;
-    const filteredPlayers = appState.players.map((p, i) => ({...p, originalIndex: i}))
-                                        .filter(p => p.playerClass === classVal && p.playerGroup === groupVal);
-    if (filteredPlayers.length === 0) {
-        dom.inputPlayersArea.innerHTML = '<div style="color:#888;">このクラス・組には選手がいません。</div>';
-        return;
-    }
-    const fragment = document.createDocumentFragment();
-    filteredPlayers.forEach(p => {
-        const playerDiv = document.createElement('div');
-        playerDiv.className = 'player-input-row';
-        playerDiv.innerHTML = `
-            <div class="player-name">${p.name}</div>
-            <div class="score-inputs">
-                <span>床: <input type='number' min='0' step='0.001' value='${p.floor|| ""}' data-event='floor' data-index='${p.originalIndex}'></span>
-                <span>あん馬: <input type='number' min='0' step='0.001' value='${p.pommel|| ""}' data-event='pommel' data-index='${p.originalIndex}'></span>
-                <span>つり輪: <input type='number' min='0' step='0.001' value='${p.rings|| ""}' data-event='rings' data-index='${p.originalIndex}'></span>
-                <span>跳馬: <input type='number' min='0' step='0.001' value='${p.vault|| ""}' data-event='vault' data-index='${p.originalIndex}'></span>
-                <span>平行棒: <input type='number' min='0' step='0.001' value='${p.pbars|| ""}' data-event='pbars' data-index='${p.originalIndex}'></span>
-                <span>鉄棒: <input type='number' min='0' step='0.001' value='${p.hbar|| ""}' data-event='hbar' data-index='${p.originalIndex}'></span>
-            </div>
-        `;
-        fragment.appendChild(playerDiv);
-    });
-    dom.inputPlayersArea.innerHTML = '';
-    dom.inputPlayersArea.appendChild(fragment);
-}
-
-function renderTotalRanking() {
-    const selectedClass = appState.ui.totalRankClass;
-    updateTabAndContentActiveState(dom.totalRankTabs, 'totalRankContent', selectedClass);
-    ['C', 'B', 'A'].forEach(classVal => {
-        const tbody = dom[`class${classVal}_playersTable`]?.querySelector('tbody');
-        if (!tbody) return;
-        const sortedPlayers = appState.players.map((p, i) => ({ ...p, originalIndex: i })).filter(p => p.playerClass === classVal).sort((a, b) => b.total - a.total);
-        tbody.innerHTML = '';
-        let rank = 1;
-        sortedPlayers.forEach((p, i) => {
-            if (i > 0 && (p.total || 0) < (sortedPlayers[i - 1].total || 0)) rank = i + 1;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.playerGroup}</td><td>${p.total.toFixed(3)}</td><td><button type="button" onclick="scrollToPlayerInput(${p.originalIndex})">編集</button></td>`;
-            tbody.appendChild(tr);
-        });
-    });
-}
-
-function renderEventRanking() {
-    const selectedClass = appState.ui.eventRankClass;
-    updateTabAndContentActiveState(dom.eventRankTabs, 'eventRankContent', selectedClass);
-    ['C', 'B', 'A'].forEach(classVal => {
-        MEN_EVENTS.forEach(eventVal => {
-            const tbody = dom[`eventRankContent_${classVal}_${eventVal}`]?.querySelector('tbody');
-            if (!tbody) return;
-            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
-            tbody.innerHTML = '';
-            let rank = 1;
-            sortedPlayers.forEach((p, i) => {
-                if (i > 0 && (p[eventVal] || 0) < (sortedPlayers[i - 1][eventVal] || 0)) rank = i + 1;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${(p[eventVal] || 0).toFixed(3)}</td>`;
-                tbody.appendChild(tr);
-            });
-        });
-    });
-}
-
-function updateTabAndContentActiveState(tabsContainer, contentIdPrefix, selectedClass) {
-    tabsContainer.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.class === selectedClass));
-    ['C', 'B', 'A'].forEach(cls => dom[`${contentIdPrefix}_${cls}`]?.classList.toggle('active', cls === selectedClass));
-}
-
-function scrollToPlayerInput(originalIndex) {
-    const player = appState.players[originalIndex];
-    if (!player) return;
-    dom.inputClassSelect.value = player.playerClass;
-    renderGroupOptions();
-    dom.inputGroupSelect.value = player.playerGroup;
-    renderInputPlayersArea();
-    const targetInput = dom.inputPlayersArea.querySelector(`input[data-index="${originalIndex}"]`);
-    targetInput?.closest('.player-input-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function prepareForPrint() {
-    const container = dom['print-container'];
-    if (!container) return;
-    container.innerHTML = '';
-    const competitionName = appState.competitionName || '体操スコアシート (男子)';
-    ['C', 'B', 'A'].forEach(classVal => {
-        const playersInClass = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b.total || 0) - (a.total || 0));
-        if (playersInClass.length === 0) return;
-        // 総合順位をここで再計算
-        const rankedPlayers = playersInClass.map((p, i, arr) => {
-            let rank = 1;
-            if (i > 0 && (p.total || 0) < (playersInClass[i - 1].total || 0)) {
-                rank = i + 1;
-            } else if (i > 0 && (p.total || 0) === (playersInClass[i - 1].total || 0)) {
-                rank = arr[i-1].rank; // 同点の場合は前の選手の順位と同じ
-            }
-            return { ...p, rank: rank };
-        });
-        const pageDiv = document.createElement('div');
-        pageDiv.className = 'print-page';
-        let tableHTML = `
-            <h2>${competitionName} - ${classVal}クラス 結果</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>順位</th>
-                        <th>選手名</th>
-                        <th>床</th>
-                        <th>あん馬</th>
-                        <th>つり輪</th>
-                        <th>跳馬</th>
-                        <th>平行棒</th>
-                        <th>鉄棒</th>
-                        <th>総合得点</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-        rankedPlayers.forEach(p => {
-            tableHTML += `<tr><td>${p.rank}</td><td>${p.name}</td><td>${(p.floor || 0).toFixed(3)}</td><td>${(p.pommel || 0).toFixed(3)}</td><td>${(p.rings || 0).toFixed(3)}</td><td>${(p.vault || 0).toFixed(3)}</td><td>${(p.pbars || 0).toFixed(3)}</td><td>${(p.hbar || 0).toFixed(3)}</td><td>${(p.total || 0).toFixed(3)}</td></tr>`;
-        });
-        tableHTML += `</tbody></table>`;
-        pageDiv.innerHTML = tableHTML;
-        container.appendChild(pageDiv);
-    });
-}
-
-function setupEventListeners() {
-    dom.printBtn.addEventListener('click', () => { prepareForPrint(); window.print(); });
-    dom.competitionNameInput.addEventListener('change', (e) => { appState.competitionName = e.target.value; saveStateToServer(); });
-    dom.csvUploadBtn.addEventListener('click', handleCsvUpload);
-    dom.inputClassSelect.addEventListener('change', () => { renderGroupOptions(); renderInputPlayersArea(); });
-    dom.inputGroupSelect.addEventListener('change', renderInputPlayersArea);
-    dom.inputScoreSubmitBtn.addEventListener('click', handleSubmitScores);
-    dom.inputPlayersArea.addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
-        e.preventDefault();
-        const allInputs = Array.from(dom.inputPlayersArea.querySelectorAll('input[type="number"]'));
-        const currentIndex = allInputs.indexOf(e.target);
-        for (let i = currentIndex + 1; i < allInputs.length; i++) {
-            if (allInputs[i].dataset.event === e.target.dataset.event) {
-                allInputs[i].focus();
-                return;
-            }
-        }
-    });
-    dom.totalRankTabs.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { appState.ui.totalRankClass = e.target.dataset.class; renderTotalRanking(); } });
-    dom.eventRankTabs.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { appState.ui.eventRankClass = e.target.dataset.class; renderEventRanking(); } });
-    dom.competitionNameInput.addEventListener('input', (e) => { appState.competitionName = e.target.value; renderCompetitionName(); });
-
-    // CSVヘルプモーダルのイベントリスナー
-    dom.csvHelpBtn.addEventListener('click', () => {
-        dom.csvHelpModal.style.display = 'block';
-    });
-    dom.closeCsvHelpModal.addEventListener('click', () => {
-        dom.csvHelpModal.style.display = 'none';
-    });
-    window.addEventListener('click', (e) => {
-        if (e.target == dom.csvHelpModal) {
-            dom.csvHelpModal.style.display = 'none';
-        }
+    const socket = io({
+        transports: ['websocket', 'polling']
     });
 
-    // ページを離れる直前にデータを保存する
-    window.addEventListener('beforeunload', () => {
-        // 変更がある場合のみ保存を実行
-        // この機能は意図しない動作を引き起こす可能性があるため、
-        // 一旦、手動保存を促すメッセージに留めます。
-        // もし未保存のデータがある場合に警告を表示したい場合は、
-        // ここにロジックを追加できますが、現状はシンプルに何もしないようにします。
-        // 例: if (hasUnsavedChanges()) { saveStateToServer(); }
-        // 今回は、このイベントリスナー内の処理を空にします。
-    });
-}
+    let appState = {
+        competitionName: '',
+        players: []
+    };
 
-function setupSocketEventListeners(socket) {
+    // --- DOM Elements ---
+    const competitionNameDisplay = document.getElementById('competitionName');
+    const competitionNameInput = document.getElementById('competitionNameInput');
+    const saveButton = document.getElementById('saveButton');
+    const saveStatus = document.getElementById('saveStatus');
+    const connectionStatus = document.getElementById('connectionStatus');
+
+    // --- Socket.IO Event Handlers ---
     socket.on('connect', () => {
         console.log('サーバーに接続しました。');
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = ''; dom.connectionStatus.style.display = 'none'; }
-        dom.saveButton.disabled = true;
-        socket.emit('requestInitialDataMen'); // 男子用データを要求
+        connectionStatus.textContent = 'サーバーに接続済み';
+        connectionStatus.style.backgroundColor = '#e8f5e9';
+        connectionStatus.style.borderColor = '#a5d6a7';
+        connectionStatus.style.display = 'block';
+        socket.emit('requestInitialDataMen');
     });
-    socket.on('stateUpdateMen', (newState) => { // 男子用データを受信
-        console.log('サーバーから男子の最新の状態を受信しました。');
-        appState.players = newState.players || []; // ここで受け取る players には順位情報が含まれている
-        appState.competitionName = newState.competitionName || '';
-        if (!dom.saveButton.dataset.listenerAttached) {
-            dom.saveButton.addEventListener('click', () => {
-                const stateToSend = { competitionName: appState.competitionName, players: appState.players };
-                saveStateToServer(stateToSend);
-            });
-            dom.saveButton.dataset.listenerAttached = 'true';
-        }
-        dom.saveButton.disabled = false;
-        renderAll();
-    });
+
     socket.on('disconnect', () => {
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = 'サーバーとの接続が切れました。再接続します...'; dom.connectionStatus.style.display = 'block'; }
+        console.log('サーバーから切断されました。');
+        connectionStatus.textContent = 'サーバーから切断されました。再接続を試みています...';
+        connectionStatus.style.backgroundColor = '#ffebee';
+        connectionStatus.style.borderColor = '#ef9a9a';
+        connectionStatus.style.display = 'block';
     });
-    socket.on('reconnecting', (attemptNumber) => {
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
-    });
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const socket = io('https://gymnastics-score-app.onrender.com', {
-        reconnection: true, reconnectionAttempts: Infinity, reconnectionDelay: 1000,
+    socket.on('stateUpdateMen', (newState) => {
+        console.log('サーバーから状態の更新を受け取りました。', newState);
+        appState = newState;
+        updateAllUI();
     });
-    appState.socket = socket;
 
-    cacheDOMElements();
-    setupEventListeners();
-    setupSocketEventListeners(socket);
+    // --- UI Update Functions ---
+    function updateAllUI() {
+        if (!appState) return;
+        competitionNameDisplay.textContent = appState.competitionName || `体操スコアシート (${GENDER === 'women' ? '女子' : '男子'})`;
+        competitionNameInput.value = appState.competitionName;
+        updateRankingTables();
+        updateInputArea();
+    }
+
+    function updateRankingTables() {
+        const classes = ['A', 'B', 'C'];
+        classes.forEach(playerClass => {
+            const totalRankTableBody = document.querySelector(`#class${playerClass}_playersTable tbody`);
+            if(totalRankTableBody) {
+                totalRankTableBody.innerHTML = '';
+                const classPlayers = appState.players
+                    .map((p, index) => ({ ...p, originalIndex: index }))
+                    .filter(p => p.playerClass === playerClass)
+                    .sort((a, b) => b.total - a.total);
+
+                classPlayers.forEach((player, rankIndex) => {
+                    const rank = rankIndex + 1;
+                    const row = totalRankTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${rank}</td>
+                        <td>${player.name}</td>
+                        <td>${player.playerGroup || ''}</td>
+                        <td>${player.total.toFixed(3)}</td>
+                        <td><button class="edit-btn" data-player-index="${player.originalIndex}">編集</button></td>
+                    `;
+                });
+            }
+
+            EVENTS.forEach(event => {
+                const eventRankTableBody = document.querySelector(`#eventRankContent_${playerClass}_${event} tbody`);
+                if(eventRankTableBody) {
+                    eventRankTableBody.innerHTML = '';
+                    const eventPlayers = appState.players
+                        .filter(p => p.playerClass === playerClass)
+                        .sort((a, b) => b[event] - a[event]);
+
+                    eventPlayers.forEach((player, rankIndex) => {
+                        const rank = rankIndex + 1;
+                        const row = eventRankTableBody.insertRow();
+                        row.innerHTML = `
+                            <td>${rank}</td>
+                            <td>${player.name}</td>
+                            <td>${player[event].toFixed(3)}</td>
+                        `;
+                    });
+                }
+            });
+        });
+    }
+
+    function updateInputArea() {
+        const classSelect = document.getElementById('inputClassSelect');
+        const groupSelect = document.getElementById('inputGroupSelect');
+        const playersArea = document.getElementById('inputPlayersArea');
+
+        const selectedClass = classSelect.value;
+
+        const groups = [...new Set(appState.players.filter(p => p.playerClass === selectedClass).map(p => p.playerGroup))];
+        groupSelect.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
+
+        const selectedGroup = groupSelect.value;
+
+        playersArea.innerHTML = '';
+        const targetPlayers = appState.players
+            .map((p, index) => ({ ...p, originalIndex: index }))
+            .filter(p => p.playerClass === selectedClass && p.playerGroup === selectedGroup);
+
+        targetPlayers.forEach(player => {
+            const playerRow = document.createElement('div');
+            playerRow.className = 'player-input-row';
+            playerRow.dataset.playerIndex = player.originalIndex;
+            let inputsHTML = '';
+            EVENTS.forEach(event => {
+                inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${player[event]}" step="0.001"></label>`;
+            });
+
+            playerRow.innerHTML = `
+                <span class="player-name">${player.name}</span>
+                <div class="score-inputs">${inputsHTML}</div>
+            `;
+            playersArea.appendChild(playerRow);
+        });
+    }
+
+    // --- Event Listeners ---
+
+    competitionNameInput.addEventListener('input', (e) => {
+        appState.competitionName = e.target.value;
+        competitionNameDisplay.textContent = appState.competitionName;
+    });
+
+    saveButton.addEventListener('click', () => {
+        saveStatus.textContent = '保存中...';
+        saveStatus.style.color = 'orange';
+
+        socket.emit('saveData', { gender: GENDER, newState: appState }, (response) => {
+            if (response.success) {
+                saveStatus.textContent = `保存しました (${new Date().toLocaleTimeString()})`;
+                saveStatus.style.color = 'green';
+            } else {
+                saveStatus.textContent = `エラー: ${response.message}`;
+                saveStatus.style.color = 'red';
+            }
+        });
+    });
+
+    document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
+    document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
+
+    document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
+        const playerRows = document.querySelectorAll('#inputPlayersArea .player-input-row');
+        playerRows.forEach(row => {
+            const playerIndex = parseInt(row.dataset.playerIndex, 10);
+            let total = 0;
+            row.querySelectorAll('.score-input').forEach(input => {
+                const event = input.dataset.event;
+                const score = parseFloat(input.value) || 0;
+                appState.players[playerIndex][event] = score;
+                total += score;
+            });
+            appState.players[playerIndex].total = total;
+        });
+        updateAllUI();
+        alert('点数を登録しました。忘れずに「スプレッドシートに保存」ボタンを押してください。');
+    });
+
+    document.getElementById('csvUploadBtn').addEventListener('click', () => {
+        const fileInput = document.getElementById('csvInput');
+        if (fileInput.files.length === 0) {
+            alert('CSVファイルを選択してください。');
+            return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target.result;
+                const rows = text.split('\n').filter(row => row.trim() !== '');
+                const newPlayers = rows.slice(1).map(row => {
+                    const cols = row.split(',');
+                    const player = {
+                        playerClass: cols[0]?.trim() || 'C',
+                        playerGroup: cols[1]?.trim() || '1組',
+                        name: cols[3]?.trim() || '名無し',
+                        floor: parseFloat(cols[4]) || 0,
+                        pommel: parseFloat(cols[5]) || 0,
+                        rings: parseFloat(cols[6]) || 0,
+                        vault: parseFloat(cols[7]) || 0,
+                        pbars: parseFloat(cols[8]) || 0,
+                        hbar: parseFloat(cols[9]) || 0,
+                        total: 0
+                    };
+                    player.total = player.floor + player.pommel + player.rings + player.vault + player.pbars + player.hbar;
+                    return player;
+                });
+                appState.players = newPlayers;
+                updateAllUI();
+                alert(`${newPlayers.length}人の選手データを読み込みました。内容を確認し、問題なければ「スプレッドシートに保存」してください。`);
+            } catch (error) {
+                alert('CSVファイルの読み込みに失敗しました。形式を確認してください。');
+                console.error(error);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    function setupTabs(tabContainerId) {
+        const tabContainer = document.getElementById(tabContainerId);
+        if (!tabContainer) return;
+        tabContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const playerClass = e.target.dataset.class;
+                tabContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                const contentContainer = tabContainer.nextElementSibling.querySelector('.table-wrapper') || tabContainer.nextElementSibling;
+                contentContainer.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`${contentContainer.children[0].id.split('_')[0]}_${playerClass}`).classList.add('active');
+            }
+        });
+    }
+    setupTabs('totalRankTabs');
+    setupTabs('eventRankTabs');
+
+    document.querySelector('.container').addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-btn')) {
+            const playerIndex = parseInt(e.target.dataset.playerIndex, 10);
+            const player = appState.players[playerIndex];
+            openEditModal(player, playerIndex);
+        }
+    });
+
+    function openEditModal(player, playerIndex) {
+        const oldModal = document.getElementById('editModal');
+        if (oldModal) oldModal.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'editModal';
+        modal.className = 'modal';
+        modal.style.display = 'block';
+
+        let inputsHTML = '';
+        EVENTS.forEach(event => {
+            inputsHTML += `
+                <label>${EVENT_NAMES[event]}:
+                    <input type="number" id="edit_${event}" value="${player[event]}" step="0.001">
+                </label><br>`;
+        });
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-button" id="closeEditModal">&times;</span>
+                <h3>${player.name} のスコア編集</h3>
+                <label>名前: <input type="text" id="edit_name" value="${player.name}"></label><br>
+                <label>クラス: <input type="text" id="edit_playerClass" value="${player.playerClass}"></label><br>
+                <label>組: <input type="text" id="edit_playerGroup" value="${player.playerGroup}"></label><br>
+                <hr>
+                ${inputsHTML}
+                <hr>
+                <button id="saveEditBtn">変更を保存</button>
+                <button id="deletePlayerBtn" style="background-color: #d32f2f;">選手を削除</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('closeEditModal').onclick = () => modal.style.display = 'none';
+        modal.onclick = (event) => { if (event.target == modal) { modal.style.display = 'none'; } };
+
+        document.getElementById('saveEditBtn').onclick = () => {
+            const editedPlayer = appState.players[playerIndex];
+            editedPlayer.name = document.getElementById('edit_name').value;
+            editedPlayer.playerClass = document.getElementById('edit_playerClass').value;
+            editedPlayer.playerGroup = document.getElementById('edit_playerGroup').value;
+
+            let total = 0;
+            EVENTS.forEach(event => {
+                const score = parseFloat(document.getElementById(`edit_${event}`).value) || 0;
+                editedPlayer[event] = score;
+                total += score;
+            });
+            editedPlayer.total = total;
+
+            updateAllUI();
+            modal.style.display = 'none';
+        };
+
+        document.getElementById('deletePlayerBtn').onclick = () => {
+            if (confirm(`${player.name}さんを削除しますか？この操作は元に戻せません。`)) {
+                appState.players.splice(playerIndex, 1);
+                updateAllUI();
+                modal.style.display = 'none';
+            }
+        };
+    }
+
+    document.getElementById('csvHelpBtn').onclick = () => document.getElementById('csvHelpModal').style.display = 'block';
+    document.getElementById('closeCsvHelpModal').onclick = () => document.getElementById('csvHelpModal').style.display = 'none';
+    window.onclick = (event) => {
+        const modal = document.getElementById('csvHelpModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    };
+
+    document.getElementById('printBtn').addEventListener('click', () => {
+        const printContainer = document.getElementById('print-container');
+        printContainer.innerHTML = '';
+
+        const classes = ['A', 'B', 'C'];
+        classes.forEach(playerClass => {
+            const classPlayers = appState.players.filter(p => p.playerClass === playerClass).sort((a, b) => b.total - a.total);
+            if (classPlayers.length > 0) {
+                const page = document.createElement('div');
+                page.className = 'print-page';
+                let tableHTML = `<h2>${appState.competitionName} - ${playerClass}クラス 総合結果</h2>`;
+                tableHTML += `
+                    <table border="1" style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>順位</th><th>名前</th><th>組</th>
+                                ${EVENTS.map(e => `<th>${EVENT_NAMES[e]}</th>`).join('')}
+                                <th>合計</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${classPlayers.map((p, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${p.name}</td>
+                                    <td>${p.playerGroup}</td>
+                                    ${EVENTS.map(e => `<td>${p[e].toFixed(3)}</td>`).join('')}
+                                    <td>${p.total.toFixed(3)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>`;
+                page.innerHTML = tableHTML;
+                printContainer.appendChild(page);
+            }
+        });
+
+        if (printContainer.innerHTML === '') {
+            alert('印刷するデータがありません。');
+            return;
+        }
+        window.print();
+    });
 });
