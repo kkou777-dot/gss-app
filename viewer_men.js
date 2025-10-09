@@ -101,8 +101,11 @@ function renderTotalRanking() {
         const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
         let rank = 1;
-        sortedPlayers.forEach((p, i) => {
-            if (i > 0 && p.total < sortedPlayers[i - 1].total) rank = i + 1;
+        for (let i = 0; i < sortedPlayers.length; i++) {
+            const p = sortedPlayers[i];
+            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
+                rank = i + 1;
+            }
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.total.toFixed(3)}</td>`;
             tbody.appendChild(tr);
@@ -121,12 +124,16 @@ function renderEventRanking() {
             const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
             tbody.innerHTML = '';
             let rank = 1;
-            sortedPlayers.forEach((p, i) => {
-                if (i > 0 && (p[eventVal] || 0) < (sortedPlayers[i - 1][eventVal] || 0)) rank = i + 1;
+            for (let i = 0; i < sortedPlayers.length; i++) {
+                const p = sortedPlayers[i];
+                const currentScore = p[eventVal] || 0;
+                if (i > 0 && currentScore < (sortedPlayers[i - 1][eventVal] || 0)) {
+                    rank = i + 1;
+                }
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${(p[eventVal] || 0).toFixed(3)}</td>`;
+                tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${currentScore.toFixed(3)}</td>`;
                 tbody.appendChild(tr);
-            });
+            }
         });
     });
 }

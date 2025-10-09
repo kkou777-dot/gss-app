@@ -91,13 +91,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         .filter(p => p.playerClass === playerClass)
                         .sort((a, b) => b[event] - a[event]);
 
-                    eventPlayers.forEach((player, rankIndex) => {
-                        const rank = rankIndex + 1;
+                let rank = 1;
+                let lastScore = -1;
+                eventPlayers.forEach((player, i) => {
+                    const currentScore = player[event] || 0;
+                    if (currentScore < lastScore) {
+                        rank = i + 1;
+                    }
+                    lastScore = currentScore;
                         const row = eventRankTableBody.insertRow();
                         row.innerHTML = `
                             <td>${rank}</td>
                             <td>${player.name}</td>
-                            <td>${player[event].toFixed(3)}</td>
+                        <td>${currentScore.toFixed(3)}</td>
                         `;
                     });
                 }

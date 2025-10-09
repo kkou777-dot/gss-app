@@ -138,12 +138,11 @@ function renderTotalRanking() {
             .sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
         let rank = 1;
-        let lastScore = -1;
         sortedPlayers.forEach((p, i) => {
-            if (p.total < lastScore) {
+            // 同順位のロジック: 前の選手より点数が低い場合のみ順位を更新
+            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
                 rank = i + 1;
             }
-            lastScore = p.total;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${rank}</td>
@@ -171,18 +170,17 @@ function renderEventRanking() {
 
             tbody.innerHTML = '';
             let rank = 1;
-            let lastScore = -1;
             sortedPlayers.forEach((p, i) => {
                 const currentScore = p[eventVal] || 0;
-                if (currentScore < lastScore) {
+                // 同順位のロジック
+                if (i > 0 && currentScore < (sortedPlayers[i - 1][eventVal] || 0)) {
                     rank = i + 1;
                 }
-                lastScore = currentScore;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${rank}</td>
                     <td>${p.name}</td>
-                    <td>${(p[eventVal] || 0).toFixed(3)}</td>
+                    <td>${currentScore.toFixed(3)}</td>
                 `;
                 tbody.appendChild(tr);
             });
