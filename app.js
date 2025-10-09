@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const player = appState.players[e.target.dataset.playerIndex];
             if (player) {
                 // 編集対象のクラスと組をURLパラメータとして渡す
-                location.href = `input.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`;
+                window.open(`input.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`, '_blank');
             }
         }
     });

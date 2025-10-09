@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('edit-btn')) {
             const player = appState.players[e.target.dataset.playerIndex];
             if (player) {
-                location.href = `input_men.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`;
+                window.open(`input_men.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`, '_blank');
             }
         }
     });
