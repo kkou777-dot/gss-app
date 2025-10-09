@@ -86,11 +86,14 @@ function loadDataFromSheet(gender) {
   if (!configSheet) throw new Error("Sheet 'config' not found.");
 
   const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
-  let nameRow;
+  let nameRow = null;
   // シートが空でないことを確認してから値を取得
   if (configSheet.getLastRow() > 0) {
     const configData = configSheet.getDataRange().getValues();
-    nameRow = configData.find(row => row && row[0] === competitionNameKey);
+    // findの前に、配列が空でないことを確認する
+    if (configData && configData.length > 0) {
+      nameRow = configData.find(row => row && row[0] === competitionNameKey);
+    }
   }
   state.competitionName = nameRow ? nameRow[1] : '';
 
