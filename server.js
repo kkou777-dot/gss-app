@@ -167,14 +167,18 @@ io.on('connection', async (socket) => {
 
 // Renderのようなホスティング環境が指定するポート番号を使用し、なければローカル用に3000番を使う
 const PORT = process.env.PORT || 3000;
-Promise.all([
-    loadStateFromSheet('women'),
-    loadStateFromSheet('men')
-]).catch(err => {
-    console.error("\n\n[警告] サーバー起動時のデータ読み込みに失敗しました。空の状態で起動します。");
-    console.error(err.message);
-    console.error("\n");
-});
-server.listen(PORT, () => {
+
+// 1. 最初にサーバーを起動させる
+server.listen(PORT, async () => {
     console.log(`Server listening on port ${PORT}`);
+
+    // 2. サーバーが起動した後に、データ読み込みを試みる
+    console.log("サーバーが起動しました。スプレッドシートから初期データを読み込みます...");
+    try {
+        await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
+        console.log("初期データの読み込みが完了しました。");
+    } catch (err) {
+        console.error("\n\n[警告] サーバー起動時のデータ読み込みに失敗しました。アプリは空の状態で動作します。");
+        console.error(err.message, "\n");
+    }
 });

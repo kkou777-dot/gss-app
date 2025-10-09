@@ -86,8 +86,12 @@ function loadDataFromSheet(gender) {
   if (!configSheet) throw new Error("Sheet 'config' not found.");
 
   const competitionNameKey = gender === 'men' ? 'competitionNameMen' : 'competitionName';
-  const configData = configSheet.getDataRange().getValues();
-  const nameRow = configData.find(row => row[0] === competitionNameKey);
+  let nameRow;
+  // シートが空でないことを確認してから値を取得
+  if (configSheet.getLastRow() > 0) {
+    const configData = configSheet.getDataRange().getValues();
+    nameRow = configData.find(row => row && row[0] === competitionNameKey);
+  }
   state.competitionName = nameRow ? nameRow[1] : '';
 
   // 2. 選手データの読み込み
