@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerRow.dataset.playerIndex = player.originalIndex;
             let inputsHTML = '';
             EVENTS.forEach(event => {
-                inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${player[event]}" step="0.001"></label>`;
+                inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${player[event] || ''}" placeholder="0" step="0.001"></label>`;
             });
 
             playerRow.innerHTML = `
@@ -139,6 +139,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Helper Functions ---
+    function setupEnterKeyNavigation() {
+        const container = document.getElementById('inputPlayersArea');
+        container.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // フォームの送信を防ぐ
+                const allInputs = Array.from(container.querySelectorAll('.score-input'));
+                const currentIndex = allInputs.indexOf(e.target);
+                const nextInput = allInputs[currentIndex + 1];
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            }
+        });
+    }
     // --- Event Listeners ---
 
     competitionNameInput.addEventListener('input', (e) => {
@@ -199,15 +214,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         playerClass: cols[0]?.trim() || 'C',
                         playerGroup: cols[1]?.trim() || '1組',
                         name: cols[3]?.trim() || '名無し',
-                        floor: parseFloat(cols[4]) || 0,
-                        pommel: parseFloat(cols[5]) || 0,
-                        rings: parseFloat(cols[6]) || 0,
-                        vault: parseFloat(cols[7]) || 0,
-                        pbars: parseFloat(cols[8]) || 0,
-                        hbar: parseFloat(cols[9]) || 0,
+                        floor: 0,
+                        pommel: 0,
+                        rings: 0,
+                        vault: 0,
+                        pbars: 0,
+                        hbar: 0,
                         total: 0
                     };
-                    player.total = player.floor + player.pommel + player.rings + player.vault + player.pbars + player.hbar;
+                    EVENTS.forEach((event, i) => player[event] = parseFloat(cols[i + 4]) || 0);
+                    player.total = EVENTS.reduce((sum, event) => sum + player[event], 0);
                     return player;
                 });
                 appState.players = newPlayers;
@@ -258,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let inputsHTML = '';
         EVENTS.forEach(event => {
             inputsHTML += `
-                <label>${EVENT_NAMES[event]}:
+                <label>${EVENT_NAMES[event]}: 
                     <input type="number" id="edit_${event}" value="${player[event]}" step="0.001">
                 </label><br>`;
         });
@@ -361,4 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.print();
     });
+
+    // Enterキーでの移動機能を有効化
+    setupEnterKeyNavigation();
 });
