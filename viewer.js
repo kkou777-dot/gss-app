@@ -63,7 +63,7 @@ function setupSocketEventListeners(socket) {
 
     socket.on('stateUpdate', (newState) => {
         console.log('State received from server');
-        // appState.competitionName = newState.competitionName; // 閲覧ページでは大会名を上書きしない
+        appState.competitionName = newState.competitionName;
         appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
         renderAll();
