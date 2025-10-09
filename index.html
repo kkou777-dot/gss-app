@@ -56,6 +56,14 @@
             <button id="csvUploadBtn">CSV読み込み</button>
             <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
+        <hr style="margin: 1.5em 0;">
+        <div id="addPlayerSection" style="margin-bottom:1em;">
+            <label>選手を個別に追加:</label>
+            <input type="text" id="newPlayerName" placeholder="選手名">
+            <select id="newPlayerClass"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select>
+            <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
+            <button id="addPlayerBtn">選手を追加</button>
+        </div>
     </div>
     <div class="input-section" style="text-align: center; padding: 1em;">
         <button style="padding: 1em 2em; font-size: 1.2em;" onclick="location.href='input.html'">点数入力ページへ</button>
