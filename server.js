@@ -40,7 +40,9 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
                 await new Promise(res => setTimeout(res, delay));
             }
 
-            const response = await axios.get(`${GAS_WEB_APP_URL}?gender=${gender}`);
+            const response = await axios.get(`${GAS_WEB_APP_URL}?gender=${gender}`, {
+                timeout: 15000 // 15秒でタイムアウト
+            });
             const result = response.data; // axiosは自動でJSONをパースし、.dataに格納します
             if (!result.success) {
                 throw new Error(`GAS returned an error: ${result.message}`);
@@ -165,15 +167,14 @@ io.on('connection', async (socket) => {
 
 // Renderのようなホスティング環境が指定するポート番号を使用し、なければローカル用に3000番を使う
 const PORT = process.env.PORT || 3000;
-
-// サーバーを起動する前に、スプレッドシートから状態を読み込む
 Promise.all([
     loadStateFromSheet('women'),
     loadStateFromSheet('men')
 ]).catch(err => {
-    console.error("サーバー起動時のデータ読み込みに最終的に失敗しました。", err.message);
-}).finally(() => {
-    server.listen(PORT, () => {
-        console.log(`Server listening on port ${PORT}`);
-    });
+    console.error("\n\n[警告] サーバー起動時のデータ読み込みに失敗しました。空の状態で起動します。");
+    console.error(err.message);
+    console.error("\n");
+});
+server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
 });
