@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateAllUI() {
         if (!appState) return;
         // 大会名の更新
-        competitionNameDisplay.textContent = appState.competitionName || `体操スコアシート (${GENDER === 'women' ? '女子' : '男子'})`;
-        competitionNameInput.value = appState.competitionName;
+        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName || `体操スコアシート (女子)`;
+        if (competitionNameInput) competitionNameInput.value = appState.competitionName;
 
         // ランキングテーブルの更新
         updateRankingTables();
@@ -94,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 種目別ランキング
-            EVENTS.forEach(event => {
+            if (document.getElementById(`eventRankContent_${playerClass}_${EVENTS[0]}`)) { // 種目別ランキングテーブルが存在するかチェック
+                EVENTS.forEach(event => {
                 const eventRankTableBody = document.querySelector(`#eventRankContent_${playerClass}_${event} tbody`);
                 if(eventRankTableBody) {
                     eventRankTableBody.innerHTML = '';
@@ -118,12 +119,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     });
                 }
-            });
+                });
+            }
         });
     }
 
     function updateInputArea() {
         const classSelect = document.getElementById('inputClassSelect');
+        if (!classSelect) return; // 点数入力ページでなければ処理を中断
         const groupSelect = document.getElementById('inputGroupSelect');
         const playersArea = document.getElementById('inputPlayersArea');
 
@@ -234,13 +237,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
 
     // 大会名入力
-    competitionNameInput.addEventListener('input', (e) => {
+    if (competitionNameInput) competitionNameInput.addEventListener('input', (e) => {
         appState.competitionName = e.target.value;
-        competitionNameDisplay.textContent = appState.competitionName;
+        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName;
     });
 
     // 保存ボタン
-    saveButton.addEventListener('click', () => {
+    if (saveButton) saveButton.addEventListener('click', () => {
         saveStatus.textContent = '保存中...';
         saveStatus.style.color = 'orange';
 
@@ -270,8 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 入力エリアのクラス/組セレクタ
-    document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
-    document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
+    if (document.getElementById('inputClassSelect')) document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
+    if (document.getElementById('inputGroupSelect')) document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
 
     // 点数一括登録ボタン
     document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
@@ -292,7 +295,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // CSV読み込み
-    document.getElementById('csvUploadBtn').addEventListener('click', () => {
+    const csvUploadBtn = document.getElementById('csvUploadBtn');
+    if (csvUploadBtn) csvUploadBtn.addEventListener('click', () => {
         const fileInput = document.getElementById('csvInput');
         if (fileInput.files.length === 0) {
             alert('CSVファイルを選択してください。');
@@ -330,9 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
     });
+    
 
     // 選手追加ボタン
-    document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    if (addPlayerBtn) addPlayerBtn.addEventListener('click', () => {
         const nameInput = document.getElementById('newPlayerName');
         const classSelect = document.getElementById('newPlayerClass');
         const groupInput = document.getElementById('newPlayerGroup');
@@ -363,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 大会終了トグル
-    finalizeToggle.addEventListener('change', (e) => {
+    if (finalizeToggle) finalizeToggle.addEventListener('change', (e) => {
         const isFinalized = e.target.checked;
         if (isFinalized) {
             if (confirm('本当に大会を終了しますか？\n現在のデータが新しいシートにバックアップされ、入力がロックされます。')) {
@@ -392,10 +398,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 並び替えモードも強制的にOFFにする
         if (isLocked) reorderToggle.checked = false;
     }
+    
 
     // 並び替えモードのトグル
     const reorderToggle = document.getElementById('reorderModeToggle');
-    reorderToggle.addEventListener('change', (e) => {
+    if (reorderToggle) reorderToggle.addEventListener('change', (e) => {
         const isEnabled = e.target.checked;
         const playersArea = document.getElementById('inputPlayersArea');
         const toggleLabel = document.querySelector('.reorder-switch span');
@@ -427,7 +434,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs('eventRankTabs');
 
     // 編集ボタン（モーダル）
-    document.querySelector('.container').addEventListener('click', (e) => {
+    const container = document.querySelector('.container');
+    if (container) container.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const playerIndex = parseInt(e.target.dataset.playerIndex, 10);
             const player = appState.players[playerIndex];
@@ -502,17 +510,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // CSVヘルプモーダル
-    document.getElementById('csvHelpBtn').onclick = () => document.getElementById('csvHelpModal').style.display = 'block';
-    document.getElementById('closeCsvHelpModal').onclick = () => document.getElementById('csvHelpModal').style.display = 'none';
-    window.onclick = (event) => {
-        const modal = document.getElementById('csvHelpModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    };
+    const csvHelpBtn = document.getElementById('csvHelpBtn');
+    if (csvHelpBtn) {
+        csvHelpBtn.onclick = () => document.getElementById('csvHelpModal').style.display = 'block';
+        document.getElementById('closeCsvHelpModal').onclick = () => document.getElementById('csvHelpModal').style.display = 'none';
+        window.onclick = (event) => {
+            const modal = document.getElementById('csvHelpModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+    }
 
     // 印刷処理
-    document.getElementById('printBtn').addEventListener('click', () => {
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) printBtn.addEventListener('click', () => {
         const printContainer = document.getElementById('print-container');
         printContainer.innerHTML = ''; // 中身をクリア
 
@@ -564,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.print();
     });
-
+    
     // Enterキーでの移動機能を有効化
     setupEnterKeyNavigation();
 });

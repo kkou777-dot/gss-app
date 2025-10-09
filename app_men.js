@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UI Update Functions ---
     function updateAllUI() {
         if (!appState) return;
-        competitionNameDisplay.textContent = appState.competitionName || `体操スコアシート (${GENDER === 'women' ? '女子' : '男子'})`;
-        competitionNameInput.value = appState.competitionName;
+        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName || `体操スコアシート (男子)`;
+        if (competitionNameInput) competitionNameInput.value = appState.competitionName;
         updateRankingTables();
         updateInputArea();
     }
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const classes = ['A', 'B', 'C'];
         classes.forEach(playerClass => {
             const totalRankTableBody = document.querySelector(`#class${playerClass}_playersTable tbody`);
-            if(totalRankTableBody) {
+            if (totalRankTableBody) {
                 totalRankTableBody.innerHTML = '';
                 const classPlayers = appState.players
                     .map((p, index) => ({ ...p, originalIndex: index }))
@@ -88,8 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            EVENTS.forEach(event => {
-                const eventRankTableBody = document.querySelector(`#eventRankContent_${playerClass}_${event} tbody`);
+            if (document.getElementById(`eventRankContent_${playerClass}_${EVENTS[0]}`)) {
+                EVENTS.forEach(event => {
+                    const eventRankTableBody = document.querySelector(`#eventRankContent_${playerClass}_${event} tbody`);
                 if(eventRankTableBody) {
                     eventRankTableBody.innerHTML = '';
                     const eventPlayers = appState.players
@@ -112,12 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     });
                 }
-            });
+                });
+            }
         });
     }
 
     function updateInputArea() {
         const classSelect = document.getElementById('inputClassSelect');
+        if (!classSelect) return;
         const groupSelect = document.getElementById('inputGroupSelect');
         const playersArea = document.getElementById('inputPlayersArea');
 
@@ -197,13 +200,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Helper Functions ---
     function setupEnterKeyNavigation() {
         const container = document.getElementById('inputPlayersArea');
-        container.addEventListener('keydown', (e) => {
+        if (container) container.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault(); // フォームの送信を防ぐ
 
                 const currentInput = e.target;
                 const currentEvent = currentInput.dataset.event;
-
+                
                 // 現在の選手行を取得
                 const currentRow = currentInput.closest('.player-input-row');
                 if (!currentRow) return;
@@ -225,12 +228,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- Event Listeners ---
 
-    competitionNameInput.addEventListener('input', (e) => {
+    if (competitionNameInput) competitionNameInput.addEventListener('input', (e) => {
         appState.competitionName = e.target.value;
-        competitionNameDisplay.textContent = appState.competitionName;
+        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName;
     });
 
-    saveButton.addEventListener('click', () => {
+    if (saveButton) saveButton.addEventListener('click', () => {
         saveStatus.textContent = '保存中...';
         saveStatus.style.color = 'orange';
 
@@ -258,10 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
-    document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
+    if (document.getElementById('inputClassSelect')) document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
+    if (document.getElementById('inputGroupSelect')) document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
 
-    document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
+    if (document.getElementById('inputScoreSubmitBtn')) document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
         const playerRows = document.querySelectorAll('#inputPlayersArea .player-input-row');
         playerRows.forEach(row => {
             const playerIndex = parseInt(row.dataset.playerIndex, 10);
@@ -278,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('点数を登録しました。忘れずに「スプレッドシートに保存」ボタンを押してください。');
     });
 
-    document.getElementById('csvUploadBtn').addEventListener('click', () => {
+    const csvUploadBtn = document.getElementById('csvUploadBtn');
+    if (csvUploadBtn) csvUploadBtn.addEventListener('click', () => {
         const fileInput = document.getElementById('csvInput');
         if (fileInput.files.length === 0) {
             alert('CSVファイルを選択してください。');
@@ -320,7 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 選手追加ボタン
-    document.getElementById('addPlayerBtn').addEventListener('click', () => {
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+    if (addPlayerBtn) addPlayerBtn.addEventListener('click', () => {
         const nameInput = document.getElementById('newPlayerName');
         const classSelect = document.getElementById('newPlayerClass');
         const groupInput = document.getElementById('newPlayerGroup');
@@ -351,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 大会終了トグル
-    finalizeToggle.addEventListener('change', (e) => {
+    if (finalizeToggle) finalizeToggle.addEventListener('change', (e) => {
         const isFinalized = e.target.checked;
         if (isFinalized) {
             if (confirm('本当に大会を終了しますか？\n現在のデータが新しいシートにバックアップされ、入力がロックされます。')) {
@@ -383,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 並び替えモードのトグル
     const reorderToggle = document.getElementById('reorderModeToggle');
-    reorderToggle.addEventListener('change', (e) => {
+    if (reorderToggle) reorderToggle.addEventListener('change', (e) => {
         const isEnabled = e.target.checked;
         const playersArea = document.getElementById('inputPlayersArea');
         const toggleLabel = document.querySelector('.reorder-switch span');
@@ -411,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTabs('totalRankTabs');
     setupTabs('eventRankTabs');
 
-    document.querySelector('.container').addEventListener('click', (e) => {
+    const container = document.querySelector('.container');
+    if (container) container.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const playerIndex = parseInt(e.target.dataset.playerIndex, 10);
             const player = appState.players[playerIndex];
@@ -484,16 +490,20 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    document.getElementById('csvHelpBtn').onclick = () => document.getElementById('csvHelpModal').style.display = 'block';
-    document.getElementById('closeCsvHelpModal').onclick = () => document.getElementById('csvHelpModal').style.display = 'none';
-    window.onclick = (event) => {
-        const modal = document.getElementById('csvHelpModal');
-        if (event.target == modal) {
-            modal.style.display = "none";
-        }
-    };
+    const csvHelpBtn = document.getElementById('csvHelpBtn');
+    if (csvHelpBtn) {
+        csvHelpBtn.onclick = () => document.getElementById('csvHelpModal').style.display = 'block';
+        document.getElementById('closeCsvHelpModal').onclick = () => document.getElementById('csvHelpModal').style.display = 'none';
+        window.onclick = (event) => {
+            const modal = document.getElementById('csvHelpModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+    }
 
-    document.getElementById('printBtn').addEventListener('click', () => {
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) printBtn.addEventListener('click', () => {
         const printContainer = document.getElementById('print-container');
         printContainer.innerHTML = '';
 
