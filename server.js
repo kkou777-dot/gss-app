@@ -160,9 +160,17 @@ io.on('connection', async (socket) => {
 
     try {
         // 診断コードを元に戻し、本来の保存処理を呼び出す
-        await saveStateToSheet(gender);
+        await saveStateToSheet(gender); // スプレッドシートに保存
+
         const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-        io.emit(eventName, appStates[gender]); // 対応するクライアントに最新情報を送信
+        
+        // ★重要：ブロードキャストする直前に、サーバー側の最新状態を読み込み直す
+        // これにより、保存処理でIDが欠落しても、読み込み時に再付与される
+        await loadStateFromSheet(gender);
+
+        // IDが再付与された最新の状態を全クライアントに送信
+        io.emit(eventName, appStates[gender]);
+
         if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
     } catch (error) {
         let detailedErrorMessage;

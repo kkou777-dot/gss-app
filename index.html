@@ -47,6 +47,7 @@
     </style>
 </head>
 <body>
+<header>
     <div id="pull-to-refresh-indicator">↓ 更新</div>
     <h1 id="competitionName">体操スコアシート (女子)</h1>
     <div class="header-controls">
@@ -54,6 +55,7 @@
         <a href="/viewer_men" target="_blank">速報(男)</a>
         <button type="button" class="switch-gender-btn" onclick="location.href='index_men.html'">男子用</button>
     </div>
+</header>
 
     <!-- サーバー接続状態の表示エリア -->
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
@@ -213,6 +215,23 @@
     <!-- ドラッグ＆ドロップライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="app.js"></script>
+    <script>
+        // 自動保存機能の追加
+        let autoSaveTimer = null;
+        function scheduleAutoSave() {
+            // グローバルに定義されたトグルスイッチの状態を確認
+            const autoSaveToggle = document.getElementById('autoSaveToggle');
+            if (!autoSaveToggle || !autoSaveToggle.checked) {
+                return; // トグルがOFFなら何もしない
+            }
+
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => {
+                const saveButton = document.getElementById('saveButton');
+                if (saveButton) saveButton.click();
+            }, 3000); // 3秒後に保存
+        }
+    </script>
     <script>
         // Pull to Refresh 機能
         document.addEventListener('DOMContentLoaded', () => {

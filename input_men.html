@@ -18,9 +18,11 @@
     </style>
 </head>
 <body>
-    <h1>
-        <span id="competitionName">点数入力 (男子)</span>
-    </h1>
+    <header>
+        <h1>
+            <span id="competitionName">点数入力 (男子)</span>
+        </h1>
+    </header>
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
     <div class="save-container" style="margin-bottom: 1em;">
         <button id="saveButton" style="display: none;">スプレッドシートに保存</button>
@@ -57,13 +59,18 @@
         // 自動保存機能の追加
         let autoSaveTimer = null;
         function scheduleAutoSave() {
+            // グローバルに定義されたトグルスイッチの状態を確認
+            const autoSaveToggle = document.getElementById('autoSaveToggle');
+            if (!autoSaveToggle || !autoSaveToggle.checked) {
+                return; // トグルがOFFなら何もしない
+            }
+
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(() => {
                 const saveButton = document.getElementById('saveButton');
                 if (saveButton) saveButton.click();
             }, 3000); // 3秒後に保存
         }
-        document.body.addEventListener('input', (e) => { if(e.target.type === 'number' || e.target.id === 'competitionNameInput') scheduleAutoSave(); });
     </script>
 </body>
 </html>

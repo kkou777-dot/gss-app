@@ -165,3 +165,29 @@ footer {
   table { width: 100%; border-collapse: collapse; font-size: 10pt; }
   th { background-color: #f2f2f2 !important; }
 }
+/* ステータス表示と自動保存トグルのためのコンテナ */
+.status-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* 接続ステータスのスタイル調整 */
+#connectionStatus {
+    display: inline-block !important; /* 他のスタイルを上書きしてインライン表示 */
+    padding: 5px 10px;
+    margin: 0;
+}
+
+/* 自動保存トグルスイッチのスタイル */
+.autosave-switch {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+.autosave-switch label {
+    margin-right: 10px;
+}

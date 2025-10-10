@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveStatus = document.getElementById('saveStatus');
     const connectionStatus = document.getElementById('connectionStatus');
     const finalizeToggle = document.getElementById('finalizeToggle');
+    let statusContainer = null; // 後で生成するコンテナを格納
+    let autoSaveToggle = null; // 後で生成するトグルスイッチを格納
 
     // --- Socket.IO Event Handlers ---
     socket.on('connect', () => {
@@ -42,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
         connectionStatus.textContent = 'サーバーに接続済み';
         connectionStatus.style.backgroundColor = '#e8f5e9';
         connectionStatus.style.borderColor = '#a5d6a7';
-        connectionStatus.style.display = 'block';
+        // UIの準備ができてからデータを要求
+        setupDynamicUI();
         // サーバーから最新データを要求
         socket.emit('requestInitialData');
     });
@@ -52,7 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
         connectionStatus.textContent = 'サーバーから切断されました。再接続を試みています...';
         connectionStatus.style.backgroundColor = '#ffebee';
         connectionStatus.style.borderColor = '#ef9a9a';
-        connectionStatus.style.display = 'block';
+        // statusContainerが存在する場合のみ操作する
+        if (statusContainer) {
+            statusContainer.prepend(connectionStatus); // 再接続時に表示を戻す
+        }
     });
 
     socket.on('stateUpdate', (newState) => {
@@ -182,6 +188,44 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeSortable(playersArea);
     }
 
+    function setupDynamicUI() {
+        // 既存のコンテナがあれば何もしない
+        if (document.getElementById('statusContainer')) return;
+
+        // 接続ステータスと自動保存トグルのコンテナを作成
+        statusContainer = document.createElement('div'); // グローバル変数に代入
+        statusContainer.id = 'statusContainer';
+        statusContainer.className = 'status-container';
+
+        // 自動保存トグルのHTMLを作成
+        const autoSaveSwitchHTML = `
+            <div class="autosave-switch">
+                <label for="autoSaveToggle">自動保存:</label>
+                <label class="switch">
+                    <input type="checkbox" id="autoSaveToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        `;
+
+        // コンテナに接続ステータスとトグルを追加
+        statusContainer.appendChild(connectionStatus);
+        statusContainer.insertAdjacentHTML('beforeend', autoSaveSwitchHTML);
+
+        // ヘッダーの先頭にコンテナを挿入
+        const header = document.querySelector('header');
+        if (header) {
+            // ヘッダーがあればその先頭に、なければbodyの先頭に追加する
+            header.insertBefore(statusContainer, header.firstChild);
+        } else {
+            document.body.insertBefore(statusContainer, document.body.firstChild);
+        }
+
+        // トグルスイッチの参照を保存
+        autoSaveToggle = document.getElementById('autoSaveToggle');
+    }
+
+
     let sortable = null;
     function initializeSortable(container) {
         if (sortable) {
@@ -210,11 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const otherPlayers = appState.players.filter(p => !newOrderIdList.includes(p.id));
                 // 3. 全体の選手リストを「並び替えた選手」+「それ以外の選手」の順で再構築
                 appState.players = [...reorderedPlayers, ...otherPlayers];
-
-                // input.html で定義されている自動保存関数を安全に呼び出す
-                if (typeof window.scheduleAutoSave === 'function') {
-                    window.scheduleAutoSave();
-                }
             },
         });
     }
@@ -222,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Helper Functions ---
     function setupEnterKeyNavigation() {
         const container = document.getElementById('inputPlayersArea');
+        if (!container) return;
         container.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault(); // フォームの送信を防ぐ
@@ -253,7 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 大会名入力
     if (competitionNameInput) competitionNameInput.addEventListener('input', (e) => {
         appState.competitionName = e.target.value;
-        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName;
+        if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName || '体操スコアシート (女子)';
+        // scheduleAutoSaveは各HTMLで定義されている
+        if (typeof window.scheduleAutoSave === 'function') {
+            window.scheduleAutoSave();
+        }
     });
 
     // 保存ボタン
@@ -263,20 +307,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // サーバーに保存をリクエスト
         // --- 保存するデータをサニタイズ（浄化）する ---
-        // UI用に付与した `originalIndex` などを取り除く
+        // スプレッドシート保存用に、UI用のプロパティ(id, originalIndex)を除外したデータを作成
         const cleanPlayers = appState.players.map(p => {
-        const { id, originalIndex, ...cleanPlayer } = p; // id と originalIndex を除外
-            // GAS側で定義されているヘッダーに含まれるキーのみを抽出
-        // この部分は、上の除外処理で代替できるため、よりシンプルにできます。
-        // ['name', 'playerClass', 'playerGroup', 'floor', 'vault', 'bars', 'beam', 'total'].forEach(key => {
-        //     if (p.hasOwnProperty(key)) {
-        //         cleanPlayer[key] = p[key];
-        //     }
-        // });
+            const { id, originalIndex, ...cleanPlayer } = p;
             return cleanPlayer;
         });
 
-        socket.emit('saveData', { gender: GENDER, newState: { ...appState, players: cleanPlayers } }, (response) => {
+        // サーバーに送るデータオブジェクトを作成。appState自体は変更しない。
+        const stateToSave = { ...appState, players: cleanPlayers };
+
+        socket.emit('saveData', { gender: GENDER, newState: stateToSave }, (response) => {
             if (response.success) {
                 saveStatus.textContent = `保存しました (${new Date().toLocaleTimeString()})`;
                 saveStatus.style.color = 'green';
@@ -309,8 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 player.total = total;
             });
-            updateAllUI();
-            alert('点数を登録しました。忘れずに「スプレッドシートに保存」ボタンを押してください。');
+            updateAllUI(); // UIを更新
+            if (saveButton) saveButton.click(); // 即座に保存処理を実行
         });
     }
 
@@ -364,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newPlayers = rows.slice(1).map(row => {
                     const cols = row.split(',');
                     const player = {
+                        id: `csv-${Date.now()}-${Math.random()}`, // ユニークIDを付与
                         playerClass: cols[0]?.trim() || 'C',
                         playerGroup: cols[1]?.trim() || '1組',
                         name: cols[3]?.trim() || '名無し',
