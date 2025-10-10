@@ -1,3 +1,6 @@
+// .envファイルから環境変数を読み込む
+// server.jsと同じ階層にある .env ファイルを探します
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
@@ -7,6 +10,9 @@ const axios = require('axios');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// favicon.icoのリクエストに対して204 No Contentを返し、404エラーを防ぐ
+app.get('/favicon.ico', (req, res) => res.status(204).send());
 
 // --- Google Apps Script ウェブアプリ設定 ---
 const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL;
@@ -48,7 +54,17 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
                 throw new Error(`GAS returned an error: ${result.message}`);
             }
 
-            appStates[gender] = result.data;
+            // GASから返されるデータが期待する形式か確認する
+            if (result.data && Array.isArray(result.data.players)) {
+                // 各選手にユニークなIDを付与する
+                const playersWithId = result.data.players.map((p, index) => ({ ...p, id: `${gender}-${index}-${Date.now()}` }));
+                appStates[gender] = {
+                    ...result.data,
+                    players: playersWithId
+                };
+            } else {
+                throw new Error(`Received invalid data structure from GAS for ${gender}.`);
+            }
             console.log(`Loaded ${result.data.players.length} ${gender} players and competition name via GAS.`);
             return; // 成功したので関数を抜ける
         } catch (error) {

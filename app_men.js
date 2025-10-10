@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- DOMの静的コンテンツを強制的に更新 ---
+    // キャッシュが原因で古いHTMLが表示される問題への対策
+    const headerControls = document.querySelector('.header-controls');
+    if (headerControls) {
+        const links = headerControls.querySelectorAll('a');
+        if (links[0]) links[0].textContent = '速報(女)';
+        if (links[1]) links[1].textContent = '速報(男)';
+        const button = headerControls.querySelector('button');
+        if (button) button.textContent = '女子用';
+    }
     const GENDER = 'men';
     const EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'];
     const EVENT_NAMES = {
@@ -83,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${player.name}</td>
                         <td>${player.playerGroup || ''}</td>
                         <td>${player.total.toFixed(3)}</td>
-                        <td><button class="edit-btn" data-player-index="${player.originalIndex}">編集</button></td>
+                        <td><button class="edit-btn" data-player-id="${player.id}">編集</button></td>
                     `;
                 });
             }
@@ -131,16 +141,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedGroup = groupSelect.value;
 
+        if (!selectedGroup) return; // 組が選択されていない場合はここで終了
+
         playersArea.innerHTML = '';
         const targetPlayers = appState.players
-            .map((p, index) => ({ ...p, originalIndex: index }))
             .filter(p => p.playerClass === selectedClass && p.playerGroup === selectedGroup);
 
         targetPlayers.forEach(player => {
             const playerRow = document.createElement('div');
-            playerRow.id = `player-row-${player.originalIndex}`;
+            playerRow.id = `player-row-${player.id}`;
             playerRow.className = 'player-input-row';
-            playerRow.dataset.playerIndex = player.originalIndex;
+            playerRow.dataset.playerId = player.id;
             let inputsHTML = '';
             EVENTS.forEach(event => {
                 inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${player[event] || ''}" placeholder="0" step="0.001"></label>`;
@@ -163,36 +174,34 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortable) {
             sortable.destroy();
         }
+        // 現在の並び替えモードのトグルスイッチの状態を確実に取得
+        const reorderToggle = document.getElementById('reorderModeToggle');
+        const isReorderEnabled = reorderToggle ? reorderToggle.checked : false;
+
+        // SortableJSインスタンスを再作成
         sortable = new Sortable(container, {
             animation: 150,
             handle: '.reorder-handle', // ハンドルでドラッグ
             ghostClass: 'sortable-ghost',
-            disabled: true, // 初期状態では無効
+            disabled: !isReorderEnabled, // トグルスイッチの現在の状態に合わせて有効/無効を決定
             onEnd: function (evt) {
                 const { oldIndex, newIndex } = evt;
                 if (oldIndex === newIndex) return;
 
-                // 表示されている選手リストを取得
-                const displayedPlayers = appState.players
-                    .map((p, index) => ({ ...p, originalIndex: index }))
-                    .filter(p => p.playerClass === document.getElementById('inputClassSelect').value && p.playerGroup === document.getElementById('inputGroupSelect').value);
+                // 並び替え後のDOMの順序から、選手のIDの配列を作成
+                const newOrderIdList = Array.from(evt.from.children).map(row => row.dataset.playerId);
 
-                // ドラッグされた選手の元のインデックスを取得
-                const movedPlayerOriginalIndex = displayedPlayers[oldIndex].originalIndex;
-                // 移動先の位置にある選手の元のインデックスを取得
-                const targetPlayerOriginalIndex = displayedPlayers[newIndex].originalIndex;
+                // 1. 並び替えられた選手リストを新しい順序で作成
+                const reorderedPlayers = newOrderIdList.map(id => appState.players.find(p => p.id === id));
+                // 2. 表示されていない（並び替え対象外の）選手リストを取得
+                const otherPlayers = appState.players.filter(p => !newOrderIdList.includes(p.id));
+                // 3. 全体の選手リストを「並び替えた選手」+「それ以外の選手」の順で再構築
+                appState.players = [...reorderedPlayers, ...otherPlayers];
 
-                // appState.players 配列内での実際のインデックスを探す
-                const actualOldIndex = appState.players.findIndex(p => p.originalIndex === movedPlayerOriginalIndex);
-                const actualTargetIndex = appState.players.findIndex(p => p.originalIndex === targetPlayerOriginalIndex);
-
-                // 配列の要素を移動
-                const [movedItem] = appState.players.splice(actualOldIndex, 1);
-                appState.players.splice(actualTargetIndex, 0, movedItem);
-
-                // UIを更新して自動保存をトリガー
-                updateAllUI();
-                scheduleAutoSave();
+                // input_men.html で定義されている自動保存関数を安全に呼び出す
+                if (typeof window.scheduleAutoSave === 'function') {
+                    window.scheduleAutoSave();
+                }
             },
         });
     }
@@ -240,13 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 保存するデータをサニタイズ（浄化）する ---
         // UI用に付与した `originalIndex` などを取り除く
         const cleanPlayers = appState.players.map(p => {
-            const cleanPlayer = {};
+            const { id, originalIndex, ...cleanPlayer } = p; // id と originalIndex を除外
             // GAS側で定義されているヘッダーに含まれるキーのみを抽出
-            ['name', 'playerClass', 'playerGroup', 'floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar', 'total'].forEach(key => {
-                if (p.hasOwnProperty(key)) {
-                    cleanPlayer[key] = p[key];
-                }
-            });
             return cleanPlayer;
         });
 
@@ -267,15 +271,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('inputScoreSubmitBtn')) document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
         const playerRows = document.querySelectorAll('#inputPlayersArea .player-input-row');
         playerRows.forEach(row => {
-            const playerIndex = parseInt(row.dataset.playerIndex, 10);
+            const playerId = row.dataset.playerId;
+            const player = appState.players.find(p => p.id === playerId);
+            if (!player) return;
             let total = 0;
             row.querySelectorAll('.score-input').forEach(input => {
                 const event = input.dataset.event;
                 const score = parseFloat(input.value) || 0;
-                appState.players[playerIndex][event] = score;
+                player[event] = score;
                 total += score;
             });
-            appState.players[playerIndex].total = total;
+            player.total = total;
         });
         updateAllUI();
         alert('点数を登録しました。忘れずに「スプレッドシートに保存」ボタンを押してください。');
@@ -340,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const newPlayer = {
+            id: `new-${Date.now()}`, // 新規追加選手にもユニークIDを付与
             name: name,
             playerClass: playerClass,
             playerGroup: playerGroup,
@@ -389,6 +396,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 並び替えモードのトグル
     const reorderToggle = document.getElementById('reorderModeToggle');
     if (reorderToggle) reorderToggle.addEventListener('change', (e) => {
+        // --- 機能保留のための無効化 ---
+        e.preventDefault();
+        e.target.checked = false;
+        alert('この機能は現在準備中です。');
+        return;
+        // --------------------------
+
         const isEnabled = e.target.checked;
         const playersArea = document.getElementById('inputPlayersArea');
         const toggleLabel = document.querySelector('.reorder-switch span');
@@ -398,6 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleLabel.textContent = isEnabled ? 'ON' : 'OFF';
         toggleLabel.style.color = isEnabled ? 'red' : 'black';
     });
+    // --- 機能保留のための初期設定 ---
+    if (reorderToggle) {
+        reorderToggle.disabled = true; // チェックボックスを無効化
+        const label = reorderToggle.previousElementSibling;
+        if (label && label.tagName === 'LABEL') {
+            label.textContent += '（準備中）';
+        }
+    }
 
     function setupTabs(tabContainerId) {
         const tabContainer = document.getElementById(tabContainerId);
@@ -407,9 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const playerClass = e.target.dataset.class;
                 tabContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
-                const contentContainer = tabContainer.nextElementSibling.querySelector('.table-wrapper') || tabContainer.nextElementSibling;
-                contentContainer.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-                document.getElementById(`${contentContainer.children[0].id.split('_')[0]}_${playerClass}`).classList.add('active');
+                // コンテンツの表示を切り替え
+                const tableWrapper = tabContainer.nextElementSibling;
+                const contentIdPrefix = tableWrapper.querySelector('.tab-content')?.id.split('_')[0];
+                if (!contentIdPrefix) return; // プレフィックスが取れなければ中断
+                tableWrapper.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`${contentIdPrefix}_${playerClass}`).classList.add('active');
             }
         });
     }
@@ -419,7 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 編集ボタンのクリックイベントを .container に委譲
     document.querySelector('.container')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
-            const player = appState.players[e.target.dataset.playerIndex];
+            const playerId = e.target.dataset.playerId;
+            const player = appState.players.find(p => p.id === playerId);
             if (player) {
                 window.open(`input_men.html?class=${player.playerClass}&group=${encodeURIComponent(player.playerGroup)}`, '_blank');
             }
