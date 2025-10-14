@@ -332,16 +332,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         playerClass: cols[0]?.trim() || 'C',
                         playerGroup: cols[1]?.trim() || '1組',
                         name: cols[3]?.trim() || '名無し',
-                        floor: 0,
-                        pommel: 0,
-                        rings: 0,
-                        vault: 0,
-                        pbars: 0,
-                        hbar: 0,
+                        scores: {}, // scoresオブジェクトを初期化
                         total: 0
                     };
-                    EVENTS.forEach((event, i) => player[event] = parseFloat(cols[i + 4]) || 0);
-                    player.total = EVENTS.reduce((sum, event) => sum + player[event], 0);
+                    EVENTS.forEach((event, i) => {
+                        player.scores[event] = parseFloat(cols[i + 4]) || 0;
+                    });
+                    player.total = EVENTS.reduce((sum, event) => sum + (player.scores[event] || 0), 0);
                     return player;
                 });
                 appState.players = newPlayers;
