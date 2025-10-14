@@ -114,13 +114,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
 
                 let rank = 1;
-                let lastScore = -1;
                 eventPlayers.forEach((player, i) => {
                     const currentScore = player.scores?.[event] || 0;
-                    if (currentScore < lastScore) {
+                    // 前の選手がいて、そのスコアより低い場合に順位を下げる（同順位を考慮）
+                    if (i > 0 && currentScore < (eventPlayers[i - 1].scores?.[event] || 0)) {
                         rank = i + 1;
                     }
-                    lastScore = currentScore;
                         const row = eventRankTableBody.insertRow();
                         row.innerHTML = `
                             <td>${rank}</td>
@@ -373,7 +372,8 @@ document.addEventListener('DOMContentLoaded', () => {
             name: name,
             playerClass: playerClass,
             playerGroup: playerGroup,
-            floor: 0, pommel: 0, rings: 0, vault: 0, pbars: 0, hbar: 0, total: 0
+            scores: { floor: 0, pommel: 0, rings: 0, vault: 0, pbars: 0, hbar: 0 },
+            total: 0
         };
 
         appState.players.push(newPlayer);
@@ -503,13 +503,20 @@ document.addEventListener('DOMContentLoaded', () => {
         classes.forEach(playerClass => {
             // --- 種目別順位を先に計算 ---
             const eventRanks = {};
-            EVENTS.forEach(event => {
-                // 各種目ごとに選手を降順でソート
-                const sortedByEvent = appState.players
+            EVENTS.forEach(event => { // 'floor', 'pommel', ...
+                const sortedPlayers = [...appState.players]
                     .filter(p => p.playerClass === playerClass)
-                    .sort((a, b) => b[event] - a[event]);
-                // 選手名と順位のマップを作成
-                eventRanks[event] = new Map(sortedByEvent.map((p, i) => [p.name, i + 1]));
+                    .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
+
+                eventRanks[event] = new Map();
+                let rank = 1;
+                sortedPlayers.forEach((player, i) => {
+                    // 前の選手がいて、そのスコアより低い場合に順位を下げる（同順位を考慮）
+                    if (i > 0 && (player.scores?.[event] || 0) < (sortedPlayers[i - 1].scores?.[event] || 0)) {
+                        rank = i + 1;
+                    }
+                    eventRanks[event].set(player.id, rank); // IDをキーにして順位を保存
+                });
             });
 
             const classPlayers = appState.players.filter(p => p.playerClass === playerClass).sort((a, b) => b.total - a.total);
@@ -530,8 +537,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <tr>
                                     <td>${index + 1}</td>
                                     <td>${p.name}</td>
-                                    <td>${p.total.toFixed(3)}</td>
-                                    ${EVENTS.map(e => `<td>${p[e].toFixed(3)} (${eventRanks[e].get(p.name)})</td>`).join('')}
+                                    <td>${(p.total || 0).toFixed(3)}</td>
+                                    ${EVENTS.map(e => `<td>${(p.scores?.[e] || 0).toFixed(3)} (${eventRanks[e].get(p.id) || '-'})</td>`).join('')}
                                 </tr>
                             `).join('')}
                         </tbody>

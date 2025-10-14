@@ -111,7 +111,7 @@ function renderTotalRanking() {
             const p = sortedPlayers[i];
             // デンソランキング
             if (i > 0 && p.total < sortedPlayers[i - 1].total) {
-                rank++;
+                rank = i + 1; // スタンダードランキングに変更
             }
             const tr = document.createElement('tr');
             tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${p.total.toFixed(3)}</td>`;
@@ -128,15 +128,15 @@ function renderEventRanking() {
             const eventDiv = classContentDiv.querySelector(`.event-rank-wrapper > div[data-event="${eventVal}"]`);
             if (!eventDiv) return;
             const tbody = eventDiv.querySelector('table > tbody');
-            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
+            const sortedPlayers = appState.players.filter(p => p.playerClass === classVal).sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
             tbody.innerHTML = '';
             let rank = 1;
             for (let i = 0; i < sortedPlayers.length; i++) {
                 const p = sortedPlayers[i];
-                const currentScore = p[eventVal] || 0;
+                const currentScore = p.scores?.[eventVal] || 0;
                 // デンソランキング
-                if (i > 0 && currentScore < (sortedPlayers[i - 1][eventVal] || 0)) {
-                    rank++;
+                if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
+                    rank = i + 1; // スタンダードランキングに変更
                 }
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${rank}</td><td>${p.name}</td><td>${currentScore.toFixed(3)}</td>`;

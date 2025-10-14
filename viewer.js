@@ -177,14 +177,14 @@ function renderEventRanking() {
             const sortedPlayers = appState.players
                 .filter(p => p.playerClass === classVal)
                 .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
-                .sort((a, b) => (b[eventVal] || 0) - (a[eventVal] || 0));
+                .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
 
             tbody.innerHTML = '';
             let rank = 1;
             sortedPlayers.forEach((p, i) => {
-                const currentScore = p[eventVal] || 0;
+                const currentScore = p.scores?.[eventVal] || 0;
                 // 同順位のロジック
-                if (i > 0 && currentScore < (sortedPlayers[i - 1][eventVal] || 0)) {
+                if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
                     rank = i + 1;
                 }
                 const tr = document.createElement('tr');

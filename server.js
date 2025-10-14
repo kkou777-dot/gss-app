@@ -57,7 +57,10 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
             // GASから返されるデータが期待する形式か確認する
             if (result.data && Array.isArray(result.data.players)) {
                 // 各選手にユニークなIDを付与する
-                const playersWithId = result.data.players.map((p, index) => ({ ...p, id: `${gender}-${index}-${Date.now()}` }));
+                // IDが毎回変わらないように、Date.now() を削除。
+                // これにより、シートの行の順序が変わらない限り、IDは安定する。
+                const playersWithId = result.data.players.map((p, index) => ({ ...p, id: `${gender}-${index}` }));
+
                 appStates[gender] = {
                     ...result.data,
                     players: playersWithId
