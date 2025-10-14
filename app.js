@@ -166,8 +166,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetPlayers = appState.players
             .filter(p => p.playerClass === selectedClass && p.playerGroup === selectedGroup);
 
-        targetPlayers.forEach(player => {
-            const playerRow = document.createElement('div');
+        if (targetPlayers.length === 0) {
+            playersArea.innerHTML = '<p style="text-align: center; color: #777; padding: 1em;">この組には選手がいません。</p>';
+            initializeSortable(playersArea); // Sortableを空のコンテナで初期化
+            return;
+        }
+
+        targetPlayers.forEach(player => {            const playerRow = document.createElement('div');
             playerRow.id = `player-row-${player.id}`;
             playerRow.className = 'player-input-row';
             playerRow.dataset.playerId = player.id;
@@ -188,6 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
             playerRow.querySelectorAll('.score-input').forEach(input => {
                 input.addEventListener('input', (e) => {
                     socket.emit('updatePlayerScore', { gender: GENDER, playerId: player.id, scoreType: e.target.dataset.event, value: e.target.value });
+                    // 点数入力時にも自動保存をスケジュールする
+                    if (typeof window.scheduleAutoSave === 'function') {
+                        window.scheduleAutoSave();
+                    }
                 });
             });
         });

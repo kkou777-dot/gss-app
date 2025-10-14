@@ -261,9 +261,15 @@ server.listen(PORT, async () => {
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-        await Promise.all([loadStateFromSheet('women'), loadStateFromSheet('men')]);
-        console.log("初期データの読み込みが完了しました。");
-    } catch (err) {
-        console.error("\n\n[警告] 初期データの読み込みに失敗しました。アプリは空の状態で動作を続けます。", err.message, "\n");
+        await loadStateFromSheet('women');
+        console.log("女子データの読み込みが完了しました。");
+    } catch (womenError) {
+        console.error("\n\n[警告] 女子データの初期読み込みに失敗しました。", womenError.message, "\n");
+    }
+    try {
+        await loadStateFromSheet('men');
+        console.log("男子データの読み込みが完了しました。");
+    } catch (menError) {
+        console.error("\n\n[警告] 男子データの初期読み込みに失敗しました。", menError.message, "\n");
     }
 });
