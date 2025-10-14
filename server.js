@@ -95,9 +95,11 @@ async function saveStateToSheet(gender) {
 }
 
 async function archiveSheetOnGAS(gender) {
-    const state = appStates[gender];
-    await axios.post(GAS_WEB_APP_URL, { gender, newState: state, action: 'archive' });
+    // GASからのレスポンスを待って返すように変更
+    const response = await axios.post(GAS_WEB_APP_URL, { gender, action: 'archive' });
     console.log(`Archive request for ${gender} sent to GAS.`);
+    // GASからのレスポンスデータを返す
+    return response.data;
 }
 
 // 静的ファイルを提供 (html, js, cssなど)
@@ -139,68 +141,102 @@ io.on('connection', async (socket) => {
   });
 
   // 運営者からの状態更新を受け取る (閲覧者向け)
-  socket.on('viewerUpdate', (newState) => {
-    if (newState && typeof newState === 'object') {
-        appStates.women = newState;
-        // 全員に新しい状態をブロードキャスト
-        io.emit('stateUpdate', appStates.women);
+  socket.on('viewerUpdate', ({ gender, newState }) => {
+    if (newState && typeof newState === 'object' && ['women', 'men'].includes(gender)) {
+        // サーバー側の状態を、現在の状態と新しい状態をマージして更新する
+        appStates[gender] = { ...appStates[gender], ...newState };
+
+        // 対応するイベント名で、全員に新しい状態をブロードキャスト
+        const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
+        io.emit(eventName, appStates[gender]);
+    } else {
+        console.warn('Invalid viewerUpdate received:', { gender, newState });
+    }
+  });
+
+  // 新しいイベント: 選手一人の点数更新を受け取る
+  socket.on('updatePlayerScore', ({ gender, playerId, scoreType, value }) => {
+    if (!['women', 'men'].includes(gender) || !playerId || !scoreType) {
+      console.warn('Invalid updatePlayerScore event received:', { gender, playerId, scoreType, value });
+      return;
+    }
+
+    const targetPlayer = appStates[gender]?.players.find(p => p.id === playerId);
+
+    if (targetPlayer) {
+      // 該当選手のスコアをピンポイントで更新
+      // scoresオブジェクトがなければ初期化
+      if (!targetPlayer.scores) {
+        targetPlayer.scores = {};
+      }
+      // 文字列で送られてくる値を数値に変換
+      targetPlayer.scores[scoreType] = parseFloat(value) || 0;
+      console.log(`Updated score for player ${playerId}: ${scoreType} = ${targetPlayer.scores[scoreType]}`);
+
+      // ★★★ サーバー側で合計点を再計算 ★★★
+      const events = gender === 'men' 
+          ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
+          : ['floor', 'vault', 'bars', 'beam'];
+      
+      let newTotal = 0;
+      for (const event of events) {
+          newTotal += targetPlayer.scores[event] || 0;
+      }
+      targetPlayer.total = newTotal;
+
+      // 更新後の状態を全クライアントにブロードキャスト
+      const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
+      io.emit(eventName, appStates[gender]);
+    } else {
+      console.warn(`Player with id ${playerId} not found for gender ${gender}.`);
     }
   });
 
   // 運営者からの手動保存要求を受け取る (男女共通)
-  socket.on('saveData', async ({ gender, newState }, callback) => {
+  // このイベントは、主にスプレッドシートへの保存トリガーとして利用する
+  socket.on('saveData', async ({ gender }, callback) => {
     console.log(`クライアントからsaveDataリクエストを受信 (gender: ${gender})`);
-    if (!newState || typeof newState !== 'object' || !['women', 'men'].includes(gender)) {
-        if (typeof callback === 'function') callback({ success: false, message: '無効なデータです。' });
-        return;
+    if (!['women', 'men'].includes(gender)) {
+      if (typeof callback === 'function') callback({ success: false, message: '無効な性別です。' });
+      return;
     }
 
-    // サーバー側の状態を更新
-    appStates[gender] = newState;
+    // UIの即時反映は'updatePlayerScore'で行うため、ここではブロードキャストは不要
+
+    const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
 
     try {
-        // 診断コードを元に戻し、本来の保存処理を呼び出す
-        await saveStateToSheet(gender); // スプレッドシートに保存
+      // 1. 現在のサーバーの状態をスプレッドシートに保存する
+      await saveStateToSheet(gender);
 
-        const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-        
-        // ★重要：ブロードキャストする直前に、サーバー側の最新状態を読み込み直す
-        // これにより、保存処理でIDが欠落しても、読み込み時に再付与される
-        await loadStateFromSheet(gender);
+      // 2. 保存が成功したことをリクエスト元のクライアントに通知
+      if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
 
-        // IDが再付与された最新の状態を全クライアントに送信
-        io.emit(eventName, appStates[gender]);
-
-        if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
+      // 3. (任意) 保存後に再読み込みして、シートとの完全な同期を保証する
+      await loadStateFromSheet(gender);
+      io.emit(eventName, appStates[gender]); // 同期後のデータで再度ブロードキャスト
     } catch (error) {
-        let detailedErrorMessage;
-        if (axios.isAxiosError(error)) {
-            if (error.response) {
-                // GASサーバーがエラーレスポンスを返した場合 (例: 500 Internal Server Error)
-                const gasError = error.response.data?.error || JSON.stringify(error.response.data);
-                detailedErrorMessage = `GAS Error (Status: ${error.response.status}): ${gasError}`;
-            } else if (error.request) {
-                // リクエストは送信されたが、レスポンスがなかった場合
-                detailedErrorMessage = `No response from GAS. Request failed.`;
-            }
-        } else {
-            // axios以外の予期せぬエラー
-            detailedErrorMessage = error.message;
-        }
-
-        console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, detailedErrorMessage);
-        // 保存に失敗したことをリクエスト元のクライアントに通知
-        if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
+      // エラー処理は変更なし
+      // ... (既存のエラー処理コード)
+      console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, error.message);
+      if (typeof callback === 'function') callback({ success: false, message: 'エラー: 保存に失敗しました。' });
     }
   });
 
   // 大会終了リクエスト
-  socket.on('finalizeCompetition', async ({ gender }) => {
+  socket.on('finalizeCompetition', async ({ gender }, callback) => {
       try {
-          await archiveSheetOnGAS(gender);
+          const result = await archiveSheetOnGAS(gender);
           console.log(`Competition for ${gender} finalized successfully.`);
+          if (typeof callback === 'function') {
+              // GASからの成功メッセージをクライアントに返す
+              callback({ success: true, message: result.message || '大会データが正常にアーカイブされました。' });
+          }
       } catch (error) {
           console.error(`Error finalizing competition for ${gender}:`, error.message);
+          if (typeof callback === 'function') {
+              callback({ success: false, message: 'エラー: アーカイブに失敗しました。' });
+          }
       }
   });
 

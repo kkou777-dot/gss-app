@@ -111,12 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     eventRankTableBody.innerHTML = '';
                     const eventPlayers = appState.players
                         .filter(p => p.playerClass === playerClass)
-                        .sort((a, b) => b[event] - a[event]);
+                        .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
 
                 let rank = 1;
                 let lastScore = -1;
                 eventPlayers.forEach((player, i) => {
-                    const currentScore = player[event] || 0;
+                    const currentScore = player.scores?.[event] || 0;
                     if (currentScore < lastScore) {
                         rank = i + 1;
                     }
@@ -160,7 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             playerRow.dataset.playerId = player.id;
             let inputsHTML = '';
             EVENTS.forEach(event => {
-                inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${player[event] || ''}" placeholder="0" step="0.001"></label>`;
+                // サーバー側の `scores` オブジェクトを参照するように変更
+                const scoreValue = player.scores && player.scores[event] !== undefined ? player.scores[event] : '';
+                inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${scoreValue}" placeholder="0" step="0.001"></label>`;
             });
 
             playerRow.innerHTML = `
@@ -169,6 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="score-inputs">${inputsHTML}</div>
             `;
             playersArea.appendChild(playerRow);
+
+            // 各入力欄にイベントリスナーを追加
+            playerRow.querySelectorAll('.score-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    socket.emit('updatePlayerScore', { gender: GENDER, playerId: player.id, scoreType: e.target.dataset.event, value: e.target.value });
+                });
+            });
         });
 
         // 並び替えライブラリの初期化
@@ -288,17 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
         saveStatus.textContent = '保存中...';
         saveStatus.style.color = 'orange';
 
-        // --- 保存するデータをサニタイズ（浄化）する ---
-        // UI用に付与した `originalIndex` などを取り除く
-        const cleanPlayers = appState.players.map(p => {
-            const { id, originalIndex, ...cleanPlayer } = p;
-            return cleanPlayer;
-        });
-
-        // サーバーに送るデータオブジェクトを作成。appState自体は変更しない。
-        const stateToSave = { ...appState, players: cleanPlayers };
-
-        socket.emit('saveData', { gender: GENDER, newState: stateToSave }, (response) => {
+        // サーバーに保存を依頼する (newStateは送らない)
+        socket.emit('saveData', { gender: GENDER }, (response) => {
             if (response.success) {
                 saveStatus.textContent = `保存しました (${new Date().toLocaleTimeString()})`;
                 saveStatus.style.color = 'green';
@@ -311,25 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('inputClassSelect')) document.getElementById('inputClassSelect').addEventListener('change', updateInputArea);
     if (document.getElementById('inputGroupSelect')) document.getElementById('inputGroupSelect').addEventListener('change', updateInputArea);
-
-    if (document.getElementById('inputScoreSubmitBtn')) document.getElementById('inputScoreSubmitBtn').addEventListener('click', () => {
-        const playerRows = document.querySelectorAll('#inputPlayersArea .player-input-row');
-        playerRows.forEach(row => {
-            const playerId = row.dataset.playerId;
-            const player = appState.players.find(p => p.id === playerId);
-            if (!player) return;
-            let total = 0;
-            row.querySelectorAll('.score-input').forEach(input => {
-                const event = input.dataset.event;
-                const score = parseFloat(input.value) || 0;
-                player[event] = score;
-                total += score;
-            });
-            player.total = total;
-        });
-        updateAllUI(); // UIを更新
-        if (saveButton) saveButton.click(); // 即座に保存処理を実行
-    });
 
     const csvUploadBtn = document.getElementById('csvUploadBtn');
     if (csvUploadBtn) csvUploadBtn.addEventListener('click', () => {
@@ -412,10 +393,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const isFinalized = e.target.checked;
         if (isFinalized) {
             if (confirm('本当に大会を終了しますか？\n現在のデータが新しいシートにバックアップされ、入力がロックされます。')) {
-                // サーバーに大会終了を通知
-                socket.emit('finalizeCompetition', { gender: GENDER });
-                appState.isFinalized = true;
-                lockUI(true);
+                // サーバーに大会終了を通知し、コールバックで結果を受け取る
+                socket.emit('finalizeCompetition', { gender: GENDER }, (response) => {
+                    if (response.success) {
+                        alert(response.message); // 成功メッセージを表示
+                        appState.isFinalized = true;
+                        lockUI(true);
+                    } else {
+                        alert(response.message); // 失敗メッセージを表示
+                        e.target.checked = false; // 失敗したのでチェックを戻す
+                    }
+                });
             } else {
                 e.target.checked = false; // キャンセルされたらチェックを戻す
             }
