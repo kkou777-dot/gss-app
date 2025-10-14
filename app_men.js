@@ -141,12 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const selectedClass = classSelect.value;
 
+        // 現在選択されている組を保持
+        const previouslySelectedGroup = groupSelect.value;
+
         const groups = [...new Set(appState.players.filter(p => p.playerClass === selectedClass).map(p => p.playerGroup))];
         groupSelect.innerHTML = groups.map(g => `<option value="${g}">${g}</option>`).join('');
 
-        const selectedGroup = groupSelect.value;
+        // 以前選択されていた組が存在すれば、それを再度選択する
+        if (groups.includes(previouslySelectedGroup)) {
+            groupSelect.value = previouslySelectedGroup;
+        }
 
-        if (!selectedGroup) return; // 組が選択されていない場合はここで終了
+        const selectedGroup = groupSelect.value;
 
         playersArea.innerHTML = '';
         const targetPlayers = appState.players
@@ -243,21 +249,21 @@ document.addEventListener('DOMContentLoaded', () => {
             animation: 150,
             handle: '.reorder-handle', // ハンドルでドラッグ
             ghostClass: 'sortable-ghost',
-            disabled: !isReorderEnabled, // トグルスイッチの現在の状態に合わせて有効/無効を決定
-            onEnd: function (evt) {
-                const { oldIndex, newIndex } = evt;
-                if (oldIndex === newIndex) return;
+            disabled: true, // 機能保留のため、常に無効化
+            // onEnd: function (evt) {
+            //     const { oldIndex, newIndex } = evt;
+            //     if (oldIndex === newIndex) return;
 
-                // 並び替え後のDOMの順序から、選手のIDの配列を作成
-                const newOrderIdList = Array.from(evt.from.children).map(row => row.dataset.playerId);
+            //     // 並び替え後のDOMの順序から、選手のIDの配列を作成
+            //     const newOrderIdList = Array.from(evt.from.children).map(row => row.dataset.playerId);
 
-                // 1. 並び替えられた選手リストを新しい順序で作成
-                const reorderedPlayers = newOrderIdList.map(id => appState.players.find(p => p.id === id));
-                // 2. 表示されていない（並び替え対象外の）選手リストを取得
-                const otherPlayers = appState.players.filter(p => !newOrderIdList.includes(p.id));
-                // 3. 全体の選手リストを「並び替えた選手」+「それ以外の選手」の順で再構築
-                appState.players = [...reorderedPlayers, ...otherPlayers];
-            },
+            //     // 1. 並び替えられた選手リストを新しい順序で作成
+            //     const reorderedPlayers = newOrderIdList.map(id => appState.players.find(p => p.id === id));
+            //     // 2. 表示されていない（並び替え対象外の）選手リストを取得
+            //     const otherPlayers = appState.players.filter(p => !newOrderIdList.includes(p.id));
+            //     // 3. 全体の選手リストを「並び替えた選手」+「それ以外の選手」の順で再構築
+            //     appState.players = [...reorderedPlayers, ...otherPlayers];
+            // },
         });
     }
 
