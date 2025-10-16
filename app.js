@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateInputArea();
     }
 
-    // 存在するユニークなクラス名を取得し、定義された順序でソートするヘルパー関数
+    // 存在するユニークなクラス名を取得し、定義された順序でソートする
     function getSortedUniqueClasses(players) {
         const uniqueClasses = [...new Set(players.map(p => p.playerClass))];
         return uniqueClasses.sort((a, b) => {
@@ -105,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateRankingTables() {
-        const classes = getSortedUniqueClasses(appState.players);
         const totalRankTabsContainer = document.getElementById('totalRankTabs');
         const eventRankTabsContainer = document.getElementById('eventRankTabs');
         const totalTableWrapper = document.getElementById('totalRankTableWrapper');
         const eventTableWrapper = document.getElementById('eventRankTableWrapper');
 
         if (!totalRankTabsContainer || !eventRankTabsContainer || !totalTableWrapper || !eventTableWrapper) return;
+        const classes = getSortedUniqueClasses(appState.players);
 
         // 既存のタブとコンテンツをクリア
         totalRankTabsContainer.innerHTML = '';
@@ -119,25 +119,26 @@ document.addEventListener('DOMContentLoaded', () => {
         totalTableWrapper.innerHTML = '';
         eventTableWrapper.innerHTML = '';
 
-        let firstClass = true; // 最初のクラスをアクティブにするため
+        if (classes.length === 0) return;
 
-        classes.forEach(playerClass => {
+        // タブとテーブルの骨組みを生成
+        classes.forEach((playerClass, index) => {
             const classId = playerClass.replace(/\s/g, ''); // HTML ID用にスペースを除去
-            const isActive = firstClass ? ' active' : '';
+            const isActive = index === 0 ? ' active' : '';
 
             // 総合ランキングのタブとコンテンツを生成
-            totalRankTabsContainer.innerHTML += `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`;
+            totalRankTabsContainer.insertAdjacentHTML('beforeend', `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
             totalTableWrapper.innerHTML += `
                 <div id="totalRankContent_${classId}" class="tab-content${isActive}">
                     <h3>${playerClass}クラス 総合得点ランキング</h3>
                     <table id="class${classId}_playersTable">
                         <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>操作</th></tr></thead>
-                        <tbody></tbody>
+                        <tbody><!-- JSでデータ挿入 --></tbody>
                     </table>
                 </div>`;
 
             // 種目別ランキングのタブとコンテンツを生成
-            eventRankTabsContainer.innerHTML += `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`;
+            eventRankTabsContainer.insertAdjacentHTML('beforeend', `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
             eventTableWrapper.innerHTML += `
                 <div id="eventRankContent_${classId}" class="tab-content${isActive}">
                     <h3>${playerClass}クラス 種目別ランキング</h3>
@@ -146,80 +147,77 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h4>${playerClass}クラス - ${EVENT_NAMES[event]}</h4>
                             <table id="eventRankContent_${classId}_${event}">
                                 <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
-                                <tbody></tbody>
+                                <tbody><!-- JSでデータ挿入 --></tbody>
                             </table>
                         </div>`).join('')}
                 </div>`;
-            firstClass = false;
         });
 
         // 各テーブルのtbodyを埋める
         classes.forEach(playerClass => {
-            const classId = playerClass.replace(/\s/g, '');
-
-            // 総合ランキング
-            const totalRankTableBody = document.querySelector(`#class${classId}_playersTable tbody`);
-            if(totalRankTableBody) {
-                console.log(`Updating total ranking for class ${playerClass}. Players in appState:`, appState.players.filter(p => p.playerClass === playerClass).length);
-                const classPlayers = appState.players
-                    .map((p, index) => ({ ...p, originalIndex: index })) // 元のインデックスを保持
-                    .filter(p => p.playerClass === playerClass) // フィルタリングに実際のクラス名を使用
-                    .sort((a, b) => b.total - a.total);
-
-                totalRankTableBody.innerHTML = '';
-                let rank = 1;
-                classPlayers.forEach((player, i) => {
-                    // 同順位のロジック: 前の選手より点数が低い場合のみ順位を更新
-                    if (i > 0 && player.total < classPlayers[i - 1].total) {
-                        rank = i + 1;
-                    }
-                    totalRankTableBody.innerHTML += `
-                    <tr>
-                        <td>${rank}</td>
-                        <td>${player.name}</td>
-                        <td>${player.playerGroup || ''}</td> 
-                        <td>${player.total.toFixed(3)}</td>
-                        <td>
-                            <button class="edit-btn" data-player-id="${player.id}">編集</button>
-                            <button class="delete-btn" data-player-id="${player.id}">削除</button>
-                        </td>
-                    </tr>`;
-                });
-            }
-
-            // 種目別ランキング
-            // if (document.getElementById(`eventRankContent_${playerClass}_${EVENTS[0]}`)) { // このチェックは不要になる
-                EVENTS.forEach(event => {
-                const eventRankTableBody = document.querySelector(`#eventRankContent_${classId}_${event} tbody`);
-                console.log(`Updating event ranking for class ${playerClass}, event ${event}. Players in appState:`, appState.players.filter(p => p.playerClass === playerClass).length);
-                if(eventRankTableBody) {
-                    const eventPlayers = appState.players
-                        .filter(p => p.playerClass === playerClass) // フィルタリングに実際のクラス名を使用
-                    .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
-
-                    eventRankTableBody.innerHTML = '';
-                    let rank = 1;
-                    eventPlayers.forEach((player, i) => {
-                        const currentScore = player.scores?.[event] || 0;
-                        // 同順位ロジック: 前の選手がいて、そのスコアより低い場合に順位を下げる
-                        if (i > 0 && currentScore < (eventPlayers[i - 1].scores?.[event] || 0)) {
-                            rank = i + 1;
-                        }
-                        eventRankTableBody.innerHTML += `
-                        <tr>
-                            <td>${rank}</td>
-                            <td>${player.name}</td>
-                            <td>${currentScore.toFixed(3)}</td>
-                        </tr>`;
-                    });
-                }
-                });
-            // }
+            populateTotalRankingTable(playerClass);
+            populateEventRankingTables(playerClass);
         });
 
         // 動的に生成されたタブに対してイベントリスナーを再設定
         setupTabs('totalRankTabs');
         setupTabs('eventRankTabs');
+    }
+
+    function populateTotalRankingTable(playerClass) {
+        const classId = playerClass.replace(/\s/g, '');
+        const tbody = document.querySelector(`#class${classId}_playersTable tbody`);
+        if (!tbody) return;
+
+        const classPlayers = appState.players
+            .filter(p => p.playerClass === playerClass)
+            .sort((a, b) => b.total - a.total);
+
+        let rank = 1;
+        const rowsHtml = classPlayers.map((player, i) => {
+            if (i > 0 && player.total < classPlayers[i - 1].total) {
+                rank = i + 1;
+            }
+            return `
+                <tr>
+                    <td>${rank}</td>
+                    <td>${player.name}</td>
+                    <td>${player.playerGroup || ''}</td> 
+                    <td>${player.total.toFixed(3)}</td>
+                    <td>
+                        <button class="edit-btn" data-player-id="${player.id}">編集</button>
+                        <button class="delete-btn" data-player-id="${player.id}">削除</button>
+                    </td>
+                </tr>`;
+        }).join('');
+        tbody.innerHTML = rowsHtml;
+    }
+
+    function populateEventRankingTables(playerClass) {
+        const classId = playerClass.replace(/\s/g, '');
+        EVENTS.forEach(event => {
+            const tbody = document.querySelector(`#eventRankContent_${classId}_${event} tbody`);
+            if (!tbody) return;
+
+            const eventPlayers = appState.players
+                .filter(p => p.playerClass === playerClass)
+                .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
+
+            let rank = 1;
+            const rowsHtml = eventPlayers.map((player, i) => {
+                const currentScore = player.scores?.[event] || 0;
+                if (i > 0 && currentScore < (eventPlayers[i - 1].scores?.[event] || 0)) {
+                    rank = i + 1;
+                }
+                return `
+                    <tr>
+                        <td>${rank}</td>
+                        <td>${player.name}</td>
+                        <td>${currentScore.toFixed(3)}</td>
+                    </tr>`;
+            }).join('');
+            tbody.innerHTML = rowsHtml;
+        });
     }
 
     function updateInputArea() {
@@ -278,7 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
             playerRow.dataset.playerId = player.id;
             let inputsHTML = '';
             EVENTS.forEach(event => {
-                const scoreValue = player.scores && player.scores[event] !== undefined ? player.scores[event] : '';
+                // スコアが0や未定義の場合は空文字にし、入力しやすくする
+                const scoreValue = player.scores && player.scores[event] ? player.scores[event] : '';
                 inputsHTML += `<label>${EVENT_NAMES[event]}: <input type="number" class="score-input" data-event="${event}" value="${scoreValue}" placeholder="0" step="0.001"></label>`;
             });
 
@@ -470,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const name = nameInput.value.trim();
         const playerClass = classSelect.value;
-        const playerGroup = groupInput.value.trim();
+        const playerGroup = groupInput.value.trim() ? `${groupInput.value.trim().normalize('NFKC')}組` : '1組';
 
         if (!name) {
             alert('選手名を入力してください。');
@@ -487,7 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         appState.players.push(newPlayer);
-        updateAllUI();
+        // サーバーに更新を通知し、UIを同期させる
+        socket.emit('viewerUpdate', { gender: GENDER, newState: appState });
 
         // 入力欄をクリア
         nameInput.value = '';
@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: `csv-${Date.now()}-${Math.random()}`, // ユニークIDを付与
                         playerClass: playerClass, // CSVから読み込んだクラス名をそのまま使用
                         // B列の数字に「組」を付与する。入力がなければ'1組'に。
-                        playerGroup: cols[1]?.trim() ? `${cols[1].trim()}組` : '1組',
+                        playerGroup: cols[1]?.trim() ? `${cols[1].trim().normalize('NFKC')}組` : '1組',
                         // C列は空欄なのでスキップ
                         name: cols[3]?.trim() || '名無し', // D列
                         scores: {}, // scoresオブジェクトを初期化

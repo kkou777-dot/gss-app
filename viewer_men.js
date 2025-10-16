@@ -1,13 +1,13 @@
 // --- アプリケーションの状態管理 ---
+// クラスの表示順序を定義 (数値が小さいほど上位)
+const CLASS_ORDER_MAP = {
+    '上級': 1,
+    '中級': 2,
+    '初級': 3,
+    // 他のクラスは動的に追加され、このマップにない場合はアルファベット順
+};
 const appState = {
     competitionName: '',
-    // クラスの表示順序を定義 (数値が小さいほど上位)
-    CLASS_ORDER_MAP: {
-        '上級': 1,
-        '中級': 2,
-        '初級': 3,
-        // 他のクラスは動的に追加され、このマップにない場合はアルファベット順
-    },
     lastUpdated: '',
     players: [],
     ui: {
@@ -92,7 +92,6 @@ function renderCompetitionName() {
 function getSortedUniqueClasses(players) {
     const uniqueClasses = [...new Set(players.map(p => p.playerClass))];
     return uniqueClasses.sort((a, b) => {
-        // appStateからCLASS_ORDER_MAPを参照しないように修正
         const orderA = CLASS_ORDER_MAP[a] !== undefined ? CLASS_ORDER_MAP[a] : Infinity;
         const orderB = CLASS_ORDER_MAP[b] !== undefined ? CLASS_ORDER_MAP[b] : Infinity;
 
@@ -140,13 +139,11 @@ function renderTotalRanking() {
     if (!totalTableWrapper) return;
     totalTableWrapper.innerHTML = ''; // クリア
 
-    const classes = getSortedUniqueClasses(appState.players);
-    classes.forEach(playerClass => {
-        if (playerClass !== selectedClass) return; // アクティブなクラスのみ描画
+    // 選択されたクラスが存在しない場合は何もしない
+    if (!selectedClass) return;
 
-        const classId = playerClass.replace(/\s/g, '');
-
-        totalTableWrapper.innerHTML = `
+    const classId = selectedClass.replace(/\s/g, '');
+    totalTableWrapper.innerHTML = `
             <div id="totalRankContent_${classId}" class="tab-content active">
                 <h3>${playerClass}クラス 総合得点ランキング</h3>
                 <table id="class${classId}_playersTable">
@@ -155,27 +152,27 @@ function renderTotalRanking() {
                 </table>
             </div>`;
 
-        const tbody = document.getElementById(`class${classId}_playersTable`)?.querySelector('tbody');
-        if (!tbody) return;
+    const tbody = document.getElementById(`class${classId}_playersTable`)?.querySelector('tbody');
+    if (!tbody) return;
 
-        const searchTerm = appState.ui.searchTerm || '';
-        const sortedPlayers = appState.players
-            .filter(p => p.playerClass === playerClass)
-            .filter(p => p.name.includes(searchTerm))
-            .sort((a, b) => b.total - a.total);
-        tbody.innerHTML = '';
-        sortedPlayers.forEach((p, i) => {
-            let rank = 1;
-            // スタンダードランキング（同点は同順位、次の順位は飛ぶ）
-            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
-                rank = i + 1;
-            }
-            tbody.innerHTML += `
+    const searchTerm = appState.ui.searchTerm || '';
+    const sortedPlayers = appState.players
+        .filter(p => p.playerClass === selectedClass)
+        .filter(p => p.name.includes(searchTerm))
+        .sort((a, b) => b.total - a.total);
+
+    let rank = 1;
+    const rowsHtml = sortedPlayers.map((p, i) => {
+        // スタンダードランキング（同点は同順位、次の順位は飛ぶ）
+        if (i > 0 && p.total < sortedPlayers[i - 1].total) {
+            rank = i + 1;
+        }
+        return `
             <tr>
                 <td>${rank}</td><td>${p.name}</td><td>${p.total.toFixed(3)}</td>
             </tr>`;
-        });
-    });
+    }).join('');
+    tbody.innerHTML = rowsHtml;
 }
 
 function renderEventRanking() {
@@ -186,65 +183,56 @@ function renderEventRanking() {
     if (!eventTableWrapper) return;
     eventTableWrapper.innerHTML = ''; // クリア
 
-    const classes = getSortedUniqueClasses(appState.players);
-    classes.forEach(playerClass => {
-        if (playerClass !== selectedClass) return; // アクティブなクラスのみ描画
+    // 選択されたクラスやランキング種別がなければ何もしない
+    if (!selectedClass || rankingType === 'total') return;
 
-        const classId = playerClass.replace(/\s/g, '');
+    const classId = selectedClass.replace(/\s/g, '');
+    const eventVal = rankingType;
 
-        const EVENTS = ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar']; // 男子用種目
-        const EVENT_NAMES = {
-            floor: '床',
-            pommel: 'あん馬',
-            rings: 'つり輪',
-            vault: '跳馬',
-            pbars: '平行棒',
-            hbar: '鉄棒'
-        };
+    const EVENT_NAMES = {
+        floor: '床',
+        pommel: 'あん馬',
+        rings: 'つり輪',
+        vault: '跳馬',
+        pbars: '平行棒',
+        hbar: '鉄棒'
+    };
+    const eventName = EVENT_NAMES[eventVal];
 
-        let eventContentHTML = '';
-        EVENTS.forEach(eventVal => {
-            if (rankingType !== eventVal) return; // 選択中の種目のみ描画
-
-            eventContentHTML += `
+    if (eventName) {
+        eventTableWrapper.innerHTML = `
+            <div id="eventRankContent_${classId}" class="tab-content active">
                 <div class="event-rank-wrapper">
                     <div data-event="${eventVal}" class="active">
-                        <h3>${playerClass}クラス - ${EVENT_NAMES[eventVal]} ランキング</h3>
+                        <h3>${selectedClass}クラス - ${eventName} ランキング</h3>
                         <table>
                             <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
-                </div>`;
-        });
+                </div>
+            </div>`;
 
-        eventTableWrapper.innerHTML = `<div id="eventRankContent_${classId}" class="tab-content active">${eventContentHTML}</div>`;
+        const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
+        if (!tbody) return;
 
-        // 各種目テーブルのtbodyを埋める
-        EVENTS.forEach(eventVal => {
-            if (rankingType !== eventVal) return;
+        const searchTerm = appState.ui.searchTerm || '';
+        const sortedPlayers = appState.players
+            .filter(p => p.playerClass === selectedClass)
+            .filter(p => p.name.includes(searchTerm))
+            .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
 
-            const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
-            if (!tbody) return;
-
-            const searchTerm = appState.ui.searchTerm || '';
-            const sortedPlayers = appState.players
-                .filter(p => p.playerClass === playerClass)
-                .filter(p => p.name.includes(searchTerm))
-                .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
-            tbody.innerHTML = '';
-            sortedPlayers.forEach((p, i) => {
-                let rank = 1;
-                const currentScore = p.scores?.[eventVal] || 0;
-                // スタンダードランキング（同点は同順位、次の順位は飛ぶ）
-                if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
-                    rank = i + 1;
-                }
-                tbody.innerHTML += `
+        let rank = 1;
+        const rowsHtml = sortedPlayers.map((p, i) => {
+            const currentScore = p.scores?.[eventVal] || 0;
+            if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
+                rank = i + 1;
+            }
+            return `
                 <tr>
                     <td>${rank}</td><td>${p.name}</td><td>${currentScore.toFixed(3)}</td>
                 </tr>`;
-            });
-        });
-    });
+        }).join('');
+        tbody.innerHTML = rowsHtml;
+    }
 }

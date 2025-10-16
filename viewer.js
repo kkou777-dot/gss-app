@@ -161,13 +161,12 @@ function renderTotalRanking() {
     if (!totalTableWrapper) return;
     totalTableWrapper.innerHTML = ''; // クリア
 
-    classes.forEach(playerClass => {
-        const classId = playerClass.replace(/\s/g, '');
-        const isActive = playerClass === selectedClass;
+    // 選択されたクラスが存在しない場合は何もしない
+    if (!selectedClass) return;
 
-        if (!isActive) return; // アクティブなクラスのみ描画
+    const classId = selectedClass.replace(/\s/g, '');
+    totalTableWrapper.innerHTML = `
 
-        totalTableWrapper.innerHTML = `
             <div id="totalRankContent_${classId}" class="tab-content active">
                 <h3>${playerClass}クラス 総合得点ランキング</h3>
                 <table id="class${classId}_playersTable">
@@ -176,29 +175,28 @@ function renderTotalRanking() {
                 </table>
             </div>`;
 
-        const tbody = document.getElementById(`class${classId}_playersTable`)?.querySelector('tbody');
-        if (!tbody) return;
+    const tbody = document.getElementById(`class${classId}_playersTable`)?.querySelector('tbody');
+    if (!tbody) return;
 
-        const searchTerm = appState.ui.searchTerm || '';
-        const sortedPlayers = appState.players
-            .filter(p => p.playerClass === playerClass)
-            .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
-            .sort((a, b) => b.total - a.total);
-        tbody.innerHTML = '';
-        sortedPlayers.forEach((p, i) => {
-            let rank = 1;
-            // 同順位のロジック: 前の選手より点数が低い場合のみ順位を更新
-            if (i > 0 && p.total < sortedPlayers[i - 1].total) {
-                rank = i + 1;
-            }
-            tbody.innerHTML += `
+    const searchTerm = appState.ui.searchTerm || '';
+    const sortedPlayers = appState.players
+        .filter(p => p.playerClass === selectedClass)
+        .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
+        .sort((a, b) => b.total - a.total);
+
+    let rank = 1;
+    const rowsHtml = sortedPlayers.map((p, i) => {
+        if (i > 0 && p.total < sortedPlayers[i - 1].total) {
+            rank = i + 1;
+        }
+        return `
             <tr>
                 <td>${rank}</td>
                 <td>${p.name}</td>
                 <td>${p.total.toFixed(3)}</td>
             </tr>`;
-        });
-    });
+    }).join('');
+    tbody.innerHTML = rowsHtml;
 }
 
 function renderEventRanking() {
@@ -213,18 +211,16 @@ function renderEventRanking() {
     const EVENTS = ['floor', 'vault', 'bars', 'beam']; // 女子用種目
     const EVENT_NAMES = { floor: '床', vault: '跳馬', bars: '段違い平行棒', beam: '平均台' };
 
-    classes.forEach(playerClass => {
-        const classId = playerClass.replace(/\s/g, '');
-        const isActive = playerClass === selectedClass;
+    // 選択されたクラスやランキング種別がなければ何もしない
+    if (!selectedClass || rankingType === 'total') return;
 
-        if (!isActive) return; // アクティブなクラスのみ描画
+    const classId = selectedClass.replace(/\s/g, '');
+    const eventVal = rankingType;
+    const eventName = EVENT_NAMES[eventVal];
 
-        let eventContentHTML = '';
-        EVENTS.forEach(eventVal => {
-            const eventIsActive = rankingType === eventVal;
-            if (!eventIsActive) return; // 選択中の種目のみ描画
-
-            eventContentHTML += `
+    if (eventName) {
+        eventTableWrapper.innerHTML = `
+            <div id="eventRankContent_${classId}" class="tab-content active">
                 <div class="event-rank-wrapper">
                     <div data-event="${eventVal}" class="active">
                         <h3>${playerClass}クラス - ${EVENT_NAMES[eventVal]} ランキング</h3>
@@ -234,38 +230,30 @@ function renderEventRanking() {
                         </table>
                     </div>
                 </div>`;
-        });
+            </div>`;
 
-        eventTableWrapper.innerHTML = `<div id="eventRankContent_${classId}" class="tab-content active">${eventContentHTML}</div>`;
+        const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
+        if (!tbody) return;
 
-        // 各種目テーブルのtbodyを埋める
-        EVENTS.forEach(eventVal => {
-            if (rankingType !== eventVal) return;
+        const searchTerm = appState.ui.searchTerm || '';
+        const sortedPlayers = appState.players
+            .filter(p => p.playerClass === selectedClass)
+            .filter(p => p.name.includes(searchTerm))
+            .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
 
-            const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
-            if (!tbody) return;
-
-            const searchTerm = appState.ui.searchTerm || '';
-            const sortedPlayers = appState.players
-                .filter(p => p.playerClass === playerClass)
-                .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
-                .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
-
-            tbody.innerHTML = '';
-            sortedPlayers.forEach((p, i) => {
-                let rank = 1;
-                const currentScore = p.scores?.[eventVal] || 0;
-                // 同順位のロジック
-                if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
-                    rank = i + 1;
-                }
-                tbody.innerHTML += `
+        let rank = 1;
+        const rowsHtml = sortedPlayers.map((p, i) => {
+            const currentScore = p.scores?.[eventVal] || 0;
+            if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
+                rank = i + 1;
+            }
+            return `
                 <tr>
                     <td>${rank}</td>
                     <td>${p.name}</td>
                     <td>${currentScore.toFixed(3)}</td>
                 </tr>`;
-            });
-        });
-    });
+        }).join('');
+        tbody.innerHTML = rowsHtml;
+    }
 }
