@@ -43,22 +43,16 @@
         <span id="competitionName">大会結果速報 (男子)</span>
         <span id="lastUpdated" style="color: #888; font-size: 0.6em; font-weight: normal; margin-left: 1em;"></span>
     </h1>
+    <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
     <div class="controls">
         <div class="tabs" id="classTabs">
-            <button data-class="C" class="active">Cクラス</button>
-            <button data-class="B">Bクラス</button>
-            <button data-class="A">Aクラス</button>
+            <!-- JavaScriptで動的にタブが生成されます -->
         </div>
         <div class="selector">
             <label for="rankingTypeSelect">ランキング表示: </label>
             <select id="rankingTypeSelect">
                 <option value="total">総合得点</option>
-                <option value="floor">床</option>
-                <option value="pommel">あん馬</option>
-                <option value="rings">つり輪</option>
-                <option value="vault">跳馬</option>
-                <option value="pbars">平行棒</option>
-                <option value="hbar">鉄棒</option>
+                <option value="floor">床</option><option value="pommel">あん馬</option><option value="rings">つり輪</option><option value="vault">跳馬</option><option value="pbars">平行棒</option><option value="hbar">鉄棒</option>
             </select>
         </div>
         <div class="search-box">
@@ -68,44 +62,10 @@
     </div>
     <div class="container">
         <div id="totalRankingSection" class="ranking-section active">
-            <div id="totalRankContent_C" class="tab-content active">
-                <h3>Cクラス 総合得点ランキング</h3>
-                <table id="classC_playersTable"><thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead><tbody></tbody></table>
-            </div>
-            <div id="totalRankContent_B" class="tab-content">
-                <h3>Bクラス 総合得点ランキング</h3>
-                <table id="classB_playersTable"><thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead><tbody></tbody></table>
-            </div>
-            <div id="totalRankContent_A" class="tab-content">
-                 <h3>Aクラス 総合得点ランキング</h3>
-                 <table id="classA_playersTable"><thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead><tbody></tbody></table>
-            </div>
+            <div id="totalRankTableWrapper"></div>
         </div>
         <div id="eventRankingSection" class="ranking-section">
-            <div id="eventRankContent_C" class="tab-content active event-rank-wrapper">
-                <div data-event="floor" class="active"><h3>Cクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pommel"><h3>Cクラス - あん馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="rings"><h3>Cクラス - つり輪 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="vault"><h3>Cクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pbars"><h3>Cクラス - 平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="hbar"><h3>Cクラス - 鉄棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-            </div>
-            <div id="eventRankContent_B" class="tab-content event-rank-wrapper">
-                <div data-event="floor" class="active"><h3>Bクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pommel"><h3>Bクラス - あん馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="rings"><h3>Bクラス - つり輪 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="vault"><h3>Bクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pbars"><h3>Bクラス - 平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="hbar"><h3>Bクラス - 鉄棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-            </div>
-            <div id="eventRankContent_A" class="tab-content event-rank-wrapper">
-                <div data-event="floor" class="active"><h3>Aクラス - 床 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pommel"><h3>Aクラス - あん馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="rings"><h3>Aクラス - つり輪 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="vault"><h3>Aクラス - 跳馬 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="pbars"><h3>Aクラス - 平行棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                <div data-event="hbar"><h3>Aクラス - 鉄棒 ランキング</h3><table><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-            </div>
+            <div id="eventRankTableWrapper"></div>
         </div>
     </div>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>

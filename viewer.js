@@ -1,10 +1,17 @@
 // --- DOM要素のキャッシュ ---
+// クラスの表示順序を定義 (数値が小さいほど上位)
+const CLASS_ORDER_MAP = {
+    '上級': 1,
+    '中級': 2,
+    '初級': 3,
+    // 他のクラスは動的に追加され、このマップにない場合はアルファベット順
+};
 let appState = {
     competitionName: '',
     lastUpdated: '',
     players: [],
     ui: {
-        selectedClass: 'C',
+        selectedClass: '', // 初期選択クラスを空にする
         rankingType: 'total', // 'total', 'floor', 'vault', 'bars', 'beam'
     }
 };
@@ -15,10 +22,8 @@ function cacheDOMElements() {
     const ids = [
         'competitionName', 'lastUpdated', 'playerSearchInput',
         'classTabs', 'rankingTypeSelect',
-        'totalRankingSection', 'eventRankingSection', 'connectionStatus',
-        'totalRankContent_C', 'totalRankContent_B', 'totalRankContent_A',
-        'classC_playersTable', 'classB_playersTable', 'classA_playersTable',
-        'eventRankContent_C', 'eventRankContent_B', 'eventRankContent_A'
+        'totalRankingSection', 'eventRankingSection', 'connectionStatus', 
+        'totalRankTableWrapper', 'eventRankTableWrapper'
     ];
     ids.forEach(id => dom[id] = document.getElementById(id));
 }
@@ -104,96 +109,162 @@ function renderCompetitionName() {
     document.title = competitionTitle;
 }
 
+// 存在するユニークなクラス名を取得し、定義された順序でソートするヘルパー関数
+function getSortedUniqueClasses(players) {
+    const uniqueClasses = [...new Set(players.map(p => p.playerClass))];
+    return uniqueClasses.sort((a, b) => {
+        const orderA = CLASS_ORDER_MAP[a] !== undefined ? CLASS_ORDER_MAP[a] : Infinity;
+        const orderB = CLASS_ORDER_MAP[b] !== undefined ? CLASS_ORDER_MAP[b] : Infinity;
+
+        if (orderA !== Infinity && orderB !== Infinity) {
+            return orderA - orderB;
+        }
+        // 定義されていないクラスはアルファベット順
+        return a.localeCompare(b);
+    });
+}
+
 function renderTabsAndSelectors() {
     const { selectedClass, rankingType } = appState.ui;
+    const classes = getSortedUniqueClasses(appState.players);
+
+    // クラス選択タブの動的生成
+    dom.classTabs.innerHTML = '';
+    classes.forEach((playerClass, index) => {
+        const isActive = (selectedClass === '' && index === 0) || selectedClass === playerClass;
+        dom.classTabs.innerHTML += `<button data-class="${playerClass}" class="${isActive ? 'active' : ''}">${playerClass}クラス</button>`;
+    });
+
+    // 選択されたクラスが現在のクラスリストにない場合、最初のクラスを選択
+    if (!classes.includes(selectedClass) && classes.length > 0) {
+        appState.ui.selectedClass = classes[0];
+    } else if (classes.length === 0) {
+        appState.ui.selectedClass = ''; // クラスがない場合はクリア
+    }
 
     // Class Tabs
     dom.classTabs.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.class === selectedClass);
+        btn.classList.toggle('active', btn.dataset.class === appState.ui.selectedClass);
     });
 
     // Ranking Sections
     const isTotal = rankingType === 'total';
     dom.totalRankingSection.classList.toggle('active', isTotal);
     dom.eventRankingSection.classList.toggle('active', !isTotal);
-
-    // Total Ranking Content
-    ['C', 'B', 'A'].forEach(classVal => {
-        dom[`totalRankContent_${classVal}`]?.classList.toggle('active', isTotal && classVal === selectedClass);
-    });
-
-    // Event Ranking Content
-    ['C', 'B', 'A'].forEach(classVal => {
-        const classContentDiv = dom[`eventRankContent_${classVal}`];
-        classContentDiv?.classList.toggle('active', !isTotal && classVal === selectedClass);
-        if (classContentDiv) {
-            classContentDiv.querySelectorAll('.event-rank-wrapper > div').forEach(eventDiv => {
-                eventDiv.classList.toggle('active', eventDiv.dataset.event === rankingType);
-            });
-        }
-    });
 }
 
 function renderTotalRanking() {
-    ['C', 'B', 'A'].forEach(classVal => {
-        const table = dom[`class${classVal}_playersTable`];
-        if (!table) return;
-        const tbody = table.querySelector('tbody');
+    const classes = getSortedUniqueClasses(appState.players);
+    const selectedClass = appState.ui.selectedClass;
+    const totalTableWrapper = dom.totalRankTableWrapper;
+
+    if (!totalTableWrapper) return;
+    totalTableWrapper.innerHTML = ''; // クリア
+
+    classes.forEach(playerClass => {
+        const classId = playerClass.replace(/\s/g, '');
+        const isActive = playerClass === selectedClass;
+
+        if (!isActive) return; // アクティブなクラスのみ描画
+
+        totalTableWrapper.innerHTML = `
+            <div id="totalRankContent_${classId}" class="tab-content active">
+                <h3>${playerClass}クラス 総合得点ランキング</h3>
+                <table id="class${classId}_playersTable">
+                    <thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>`;
+
+        const tbody = document.getElementById(`class${classId}_playersTable`)?.querySelector('tbody');
+        if (!tbody) return;
 
         const searchTerm = appState.ui.searchTerm || '';
         const sortedPlayers = appState.players
-            .filter(p => p.playerClass === classVal)
+            .filter(p => p.playerClass === playerClass)
             .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
             .sort((a, b) => b.total - a.total);
         tbody.innerHTML = '';
-        let rank = 1;
         sortedPlayers.forEach((p, i) => {
+            let rank = 1;
             // 同順位のロジック: 前の選手より点数が低い場合のみ順位を更新
             if (i > 0 && p.total < sortedPlayers[i - 1].total) {
                 rank = i + 1;
             }
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
+            tbody.innerHTML += `
+            <tr>
                 <td>${rank}</td>
                 <td>${p.name}</td>
                 <td>${p.total.toFixed(3)}</td>
-            `;
-            tbody.appendChild(tr);
+            </tr>`;
         });
     });
 }
 
 function renderEventRanking() {
-    ['C', 'B', 'A'].forEach(classVal => {
-        const classContentDiv = document.getElementById(`eventRankContent_${classVal}`);
-        if (!classContentDiv) return;
+    const classes = getSortedUniqueClasses(appState.players);
+    const selectedClass = appState.ui.selectedClass;
+    const rankingType = appState.ui.rankingType;
+    const eventTableWrapper = dom.eventRankTableWrapper;
 
-        ['floor', 'vault', 'bars', 'beam'].forEach(eventVal => {
-            const eventDiv = classContentDiv.querySelector(`.event-rank-wrapper > div[data-event="${eventVal}"]`);
-            if (!eventDiv) return;
+    if (!eventTableWrapper) return;
+    eventTableWrapper.innerHTML = ''; // クリア
 
-            const tbody = eventDiv.querySelector('table > tbody');
+    const EVENTS = ['floor', 'vault', 'bars', 'beam']; // 女子用種目
+    const EVENT_NAMES = { floor: '床', vault: '跳馬', bars: '段違い平行棒', beam: '平均台' };
+
+    classes.forEach(playerClass => {
+        const classId = playerClass.replace(/\s/g, '');
+        const isActive = playerClass === selectedClass;
+
+        if (!isActive) return; // アクティブなクラスのみ描画
+
+        let eventContentHTML = '';
+        EVENTS.forEach(eventVal => {
+            const eventIsActive = rankingType === eventVal;
+            if (!eventIsActive) return; // 選択中の種目のみ描画
+
+            eventContentHTML += `
+                <div class="event-rank-wrapper">
+                    <div data-event="${eventVal}" class="active">
+                        <h3>${playerClass}クラス - ${EVENT_NAMES[eventVal]} ランキング</h3>
+                        <table>
+                            <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>`;
+        });
+
+        eventTableWrapper.innerHTML = `<div id="eventRankContent_${classId}" class="tab-content active">${eventContentHTML}</div>`;
+
+        // 各種目テーブルのtbodyを埋める
+        EVENTS.forEach(eventVal => {
+            if (rankingType !== eventVal) return;
+
+            const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
+            if (!tbody) return;
+
             const searchTerm = appState.ui.searchTerm || '';
             const sortedPlayers = appState.players
-                .filter(p => p.playerClass === classVal)
+                .filter(p => p.playerClass === playerClass)
                 .filter(p => p.name.includes(searchTerm)) // 検索語でフィルタリング
                 .sort((a, b) => (b.scores?.[eventVal] || 0) - (a.scores?.[eventVal] || 0));
 
             tbody.innerHTML = '';
-            let rank = 1;
             sortedPlayers.forEach((p, i) => {
+                let rank = 1;
                 const currentScore = p.scores?.[eventVal] || 0;
                 // 同順位のロジック
                 if (i > 0 && currentScore < (sortedPlayers[i - 1].scores?.[eventVal] || 0)) {
                     rank = i + 1;
                 }
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
+                tbody.innerHTML += `
+                <tr>
                     <td>${rank}</td>
                     <td>${p.name}</td>
                     <td>${currentScore.toFixed(3)}</td>
-                `;
-                tbody.appendChild(tr);
+                </tr>`;
             });
         });
     });

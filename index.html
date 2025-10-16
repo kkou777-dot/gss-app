@@ -18,6 +18,8 @@
       input[type="text"], input[type="number"], select { border-color: #f8bbd0; }
       .manual-table thead th { background-color: #fce4ec; }
       .switch-gender-btn { background-color: #1976d2; } /* 男子用に切り替えボタンは青 */
+      .delete-btn { background-color: #e53935; } /* 削除ボタンは赤色 */
+      .delete-btn:hover { background-color: #c62828; }
       .switch-gender-btn:hover { background-color: #1565c0; }
       footer { border-top-color: #f8bbd0; }
 
@@ -79,13 +81,17 @@
             <label for="csvInput">CSVファイルから一括登録:</label>
             <input type="file" id="csvInput" accept=".csv">
             <button id="csvUploadBtn">CSV読み込み</button>
+            <!-- テンプレート用ボタン -->
+            <a href="https://docs.google.com/spreadsheets/d/1vYNfVoS_Ri53BkI0CLblogJ_CnD1dcaIYma7hcbNFQc/copy" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button type="button">テンプレートを開く</button>
+            </a>
             <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
         </div>
         <hr style="margin: 1.5em 0;">
         <div id="addPlayerSection" style="margin-bottom:1em;">
             <label>選手を個別に追加:</label>
             <input type="text" id="newPlayerName" placeholder="選手名">
-            <select id="newPlayerClass"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select>
+            <select id="newPlayerClass"><option value="初級">初級クラス</option><option value="中級">中級クラス</option><option value="上級">上級クラス</option></select>
             <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
             <button id="addPlayerBtn">選手を追加</button>
         </div>
@@ -98,64 +104,20 @@
         <!-- クラス別 総合得点ランキング -->
         <div class="ranking-section">
             <div class="tabs" id="totalRankTabs">
-                <button data-class="C" class="active">Cクラス</button>
-                <button data-class="B">Bクラス</button>
-                <button data-class="A">Aクラス</button>
+                <!-- JavaScriptで動的にタブが生成されます -->
             </div>
-            <div class="table-wrapper">
-                <div id="totalRankContent_C" class="tab-content active">
-                    <h3>Cクラス 総合得点ランキング</h3>
-                    <table id="classC_playersTable">
-                        <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <div id="totalRankContent_B" class="tab-content">
-                    <h3>Bクラス 総合得点ランキング</h3>
-                    <table id="classB_playersTable">
-                        <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <div id="totalRankContent_A" class="tab-content">
-                     <h3>Aクラス 総合得点ランキング</h3>
-                     <table id="classA_playersTable">
-                        <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>編集</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+            <div class="table-wrapper" id="totalRankTableWrapper">
+                <!-- JavaScriptで動的にコンテンツが生成されます -->
             </div>
         </div>
 
         <!-- 種目別ランキング -->
         <div class="ranking-section">
             <div class="tabs" id="eventRankTabs">
-                <button data-class="C" class="active">Cクラス</button>
-                <button data-class="B">Bクラス</button>
-                <button data-class="A">Aクラス</button>
+                <!-- JavaScriptで動的にタブが生成されます -->
             </div>
-            <div class="table-wrapper">
-                <div id="eventRankContent_C" class="tab-content active">
-                    <h3>Cクラス 種目別ランキング</h3>
-                    <div data-event="floor"><h4>Cクラス - 床</h4><table id="eventRankContent_C_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="vault"><h4>Cクラス - 跳馬</h4><table id="eventRankContent_C_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="bars"><h4>Cクラス - 段違い平行棒</h4><table id="eventRankContent_C_bars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="beam"><h4>Cクラス - 平均台</h4><table id="eventRankContent_C_beam"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                </div>
-                <div id="eventRankContent_B" class="tab-content">
-                    <h3>Bクラス 種目別ランキング</h3>
-                    <div data-event="floor"><h4>Bクラス - 床</h4><table id="eventRankContent_B_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="vault"><h4>Bクラス - 跳馬</h4><table id="eventRankContent_B_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="bars"><h4>Bクラス - 段違い平行棒</h4><table id="eventRankContent_B_bars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="beam"><h4>Bクラス - 平均台</h4><table id="eventRankContent_B_beam"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                </div>
-                <div id="eventRankContent_A" class="tab-content">
-                    <h3>Aクラス 種目別ランキング</h3>
-                    <div data-event="floor"><h4>Aクラス - 床</h4><table id="eventRankContent_A_floor"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="vault"><h4>Aクラス - 跳馬</h4><table id="eventRankContent_A_vault"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="bars"><h4>Aクラス - 段違い平行棒</h4><table id="eventRankContent_A_bars"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                    <div data-event="beam"><h4>Aクラス - 平均台</h4><table id="eventRankContent_A_beam"><thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead><tbody></tbody></table></div>
-                </div>
+            <div class="table-wrapper" id="eventRankTableWrapper">
+                <!-- JavaScriptで動的にコンテンツが生成されます -->
             </div>
         </div>
     </div>
@@ -172,39 +134,42 @@
         <div class="modal-content">
             <span class="close-button" id="closeCsvHelpModal">&times;</span>
             <h2>CSVデータの作り方 (女子用)</h2>
-            <p>Excelなどの表計算ソフトで、以下の形式で選手データを作成し、「CSV (カンマ区切り)」形式で保存してください。</p>
-            <p><strong>注意:</strong> 1行目は必ずヘッダー（項目名）にしてください。プログラムは2行目からデータを読み込みます。</p>
+            <p>「テンプレートを開く」ボタンから作成したスプレッドシートに、以下の形式で選手データを入力し、「CSV (カンマ区切り)」形式で保存・ダウンロードしてください。</p>
+            <p><strong>注意:</strong> 1行目のA1セルに大会名を入力してください。選手データは2行目のヘッダー（項目名）以降を読み込みます。</p>
+
             <table class="manual-table">
                 <thead>
                     <tr>
-                        <th>A列</th><th>B列</th><th>C列</th><th>D列</th><th>E列</th><th>F列</th><th>G列</th><th>H列</th>
+                        <th>A列 (クラス)</th><th>B列 (組)</th><th>C列 (空欄)</th><th>D列 (選手名)</th><th>E列 (床)</th><th>F列 (跳馬)</th><th>G列 (段違い)</th><th>H列 (平均台)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>クラス</td><td>組</td><td>(空欄)</td><td>選手名</td><td>床</td><td>跳馬</td><td>段違い</td><td>平均台</td>
+                        <td>(大会名を入力)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
                     </tr>
                     <tr>
-                        <td>C</td><td>1組</td><td></td><td>体操 花子</td><td>0</td><td>0</td><td>0</td><td>0</td>
+                        <td>初級</td><td>1</td><td></td><td>体操 花子</td><td>0</td><td>0</td><td>0</td><td>0</td>
                     </tr>
                     <tr>
-                        <td>B</td><td>2組</td><td></td><td>日本 桜</td><td>0</td><td>0</td><td>0</td><td>0</td>
+                        <td>中級</td><td>2</td><td></td><td>日本 桜</td><td>0</td><td>0</td><td>0</td><td>0</td>
                     </tr>
                 </tbody>
             </table>
             <h4>ポイント</h4>
             <ul>
-                <li><strong>A列 (クラス):</strong> C, B, A のいずれかを入力します。</li>
-                <li><strong>B列 (組):</strong> 「1組」「2組」のように入力します。</li>
-                <li><strong>C列:</strong> この列は使いませんが、必ず空の列として存在させてください。</li>
-                <li><strong>D列 (選手名):</strong> 選手のフルネームを入力します。</li>
-                <li><strong>E列〜H列 (得点):</strong> 初期値として 0 を入力しておくと確実です。</li>
+                <li><strong>1行目:</strong> A1セルに大会名を入力します。</li>
+                <li><strong>2行目以降 (選手データ):</strong></li>
+                <li style="margin-left: 20px;"><strong>A列 (クラス):</strong> 「初級」「中級」「上級」「育成」など、大会に合わせたクラス名を入力します。</li>
+                <li style="margin-left: 20px;"><strong>B列 (組):</strong> 「1」「2」のように数字のみ入力します。アプリ側で「組」が自動的に補完されます。</li>
+                <li style="margin-left: 20px;"><strong>C列:</strong> この列は使いませんが、必ず空の列として存在させてください。</li>
+                <li style="margin-left: 20px;"><strong>E列〜H列 (得点):</strong> 初期値として 0 を入力しておくと確実です。</li>
             </ul>
-            <h4>保存方法</h4>
+            <h4>ダウンロードと反映の方法</h4>
             <ol>
-                <li>Excelのメニューから「ファイル」→「名前を付けて保存」を選択します。</li>
-                <li>「ファイルの種類」で「CSV (カンマ区切り) (*.csv)」を選択します。</li>
-                <li>「保存」ボタンをクリックします。(警告が表示される場合がありますが、「はい」で進んでください)</li>
+                <li>Googleスプレッドシートのメニューから「ファイル」→「ダウンロード」→「カンマ区切り形式 (.csv)」を選択します。</li>
+                <li>お使いのPCにCSVファイルがダウンロードされます。</li>
+                <li>この管理ページに戻り、「CSVファイルから一括登録」の「ファイルを選択」ボタンから、先ほどダウンロードしたCSVファイルを選びます。</li>
+                <li>「CSV読み込み」ボタンを押すと、データがアプリに反映されます。</li>
             </ol>
         </div>
     </div>

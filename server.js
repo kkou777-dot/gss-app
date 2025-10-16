@@ -187,9 +187,10 @@ io.on('connection', async (socket) => {
       }
       targetPlayer.total = newTotal;
 
-      // 更新後の状態を全クライアントにブロードキャスト
+      // 更新後の状態を、入力者以外の全クライアントにブロードキャスト
       const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-      io.emit(eventName, appStates[gender]);
+      // socket.broadcast.emit を使うことで、イベントを発生させた本人を除く全員に送信する
+      socket.broadcast.emit(eventName, appStates[gender]);
     } else {
       console.warn(`Player with id ${playerId} not found for gender ${gender}.`);
     }
@@ -212,12 +213,8 @@ io.on('connection', async (socket) => {
       // 1. 現在のサーバーの状態をスプレッドシートに保存する
       await saveStateToSheet(gender);
 
-      // 2. 保存が成功したことをリクエスト元のクライアントに通知
+      // 2. 保存が成功したことをリクエスト元のクライアントにコールバックで通知
       if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
-
-      // 3. (任意) 保存後に再読み込みして、シートとの完全な同期を保証する
-      await loadStateFromSheet(gender);
-      io.emit(eventName, appStates[gender]); // 同期後のデータで再度ブロードキャスト
     } catch (error) {
       // エラー処理は変更なし
       // ... (既存のエラー処理コード)
@@ -260,16 +257,14 @@ server.listen(PORT, async () => {
     console.log("サーバーが起動しました。3秒後に初期データの読み込みを開始します...");
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    try {
-        await loadStateFromSheet('women');
-        console.log("女子データの読み込みが完了しました。");
-    } catch (womenError) {
-        console.error("\n\n[警告] 女子データの初期読み込みに失敗しました。", womenError.message, "\n");
-    }
-    try {
-        await loadStateFromSheet('men');
-        console.log("男子データの読み込みが完了しました。");
-    } catch (menError) {
-        console.error("\n\n[警告] 男子データの初期読み込みに失敗しました。", menError.message, "\n");
-    }
+    // 起動時のデータ読み込みを一つずつ実行する
+    // これにより、片方のシートに問題があっても、もう片方は正常に読み込める
+    console.log("初期データの読み込みを開始します...");
+    await loadStateFromSheet('women').catch(err => {
+        console.error("\n\n[警告] 女子データの初期読み込みに失敗しました。", err.message, "\n");
+    });
+    await loadStateFromSheet('men').catch(err => {
+        console.error("\n\n[警告] 男子データの初期読み込みに失敗しました。", err.message, "\n");
+    });
+    console.log("初期データの読み込み処理が完了しました。");
 });
