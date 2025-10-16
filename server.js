@@ -55,20 +55,44 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
             }
 
             // GASから返されるデータが期待する形式か確認する
-            if (result.data && Array.isArray(result.data.players)) {
-                // 各選手にユニークなIDを付与する
-                // IDが毎回変わらないように、Date.now() を削除。
-                // これにより、シートの行の順序が変わらない限り、IDは安定する。
-                const playersWithId = result.data.players.map((p, index) => ({ ...p, id: `${gender}-${index}` }));
+            if (result.data && Array.isArray(result.data.values)) {
+                const values = result.data.values;
+                // 1行目はヘッダー、2行目以降がデータ
+                const headers = values[0];
+                const playerRows = values.slice(1);
+
+                const nameIndex = headers.indexOf('name');
+                const classIndex = headers.indexOf('playerClass');
+                const groupIndex = headers.indexOf('playerGroup');
+                const totalIndex = headers.indexOf('total');
+
+                const events = gender === 'men' 
+                    ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
+                    : ['floor', 'vault', 'bars', 'beam'];
+                const eventIndices = events.map(e => headers.indexOf(e));
+
+                const players = playerRows.map((row, index) => {
+                    const scores = {};
+                    eventIndices.forEach((eventIndex, i) => {
+                        if (eventIndex !== -1) scores[events[i]] = parseFloat(row[eventIndex]) || 0;
+                    });
+                    return {
+                        id: `${gender}-${index}`,
+                        name: row[nameIndex] || '名無し',
+                        playerClass: row[classIndex] || '初級',
+                        playerGroup: row[groupIndex] || '1組',
+                        scores: scores,
+                        total: parseFloat(row[totalIndex]) || 0,
+                    };
+                });
 
                 appStates[gender] = {
-                    ...result.data,
-                    players: playersWithId
+                    competitionName: result.data.competitionName || '',
+                    players: players
                 };
             } else {
                 throw new Error(`Received invalid data structure from GAS for ${gender}.`);
-            }
-            console.log(`Loaded ${result.data.players.length} ${gender} players and competition name via GAS.`);
+            }            console.log(`Loaded ${appStates[gender].players.length} ${gender} players and competition name via GAS.`);
             return; // 成功したので関数を抜ける
         } catch (error) {
             // axiosのエラーはより詳細な情報を持つため、それを活用します
