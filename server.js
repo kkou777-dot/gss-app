@@ -110,11 +110,13 @@ async function saveStateToSheet(gender) {
     });
 
     const dataForGas = {
-        competitionName: state.competitionName,
-        players: playersForSheet
+        gender: gender,
+        action: 'save',
+        competitionName: state.competitionName, // 大会名をトップレベルに移動
+        players: playersForSheet // 選手データ配列
     };
     // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
-    const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: dataForGas, action: 'save' });
+    const response = await axios.post(GAS_WEB_APP_URL, dataForGas);
 
     const result = response.data;
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
