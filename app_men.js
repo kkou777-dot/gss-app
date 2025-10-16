@@ -123,18 +123,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const isActive = index === 0 ? ' active' : '';
 
             // 総合ランキングのタブとコンテンツを生成
-            totalRankTabsContainer.insertAdjacentHTML('beforeend', `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
+            totalRankTabsContainer.insertAdjacentHTML('beforeend', `<button type="button" data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
             totalTableWrapper.innerHTML += `
                 <div id="totalRankContent_${classId}" class="tab-content${isActive}">
                     <h3>${playerClass}クラス 総合得点ランキング</h3>
                     <table id="class${classId}_playersTable">
                         <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>操作</th></tr></thead>
-                        <tbody><!-- JSでデータ挿入 --></tbody>
+                        <tbody></tbody>
                     </table>
                 </div>`;
 
             // 種目別ランキングのタブとコンテンツを生成
-            eventRankTabsContainer.insertAdjacentHTML('beforeend', `<button data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
+            eventRankTabsContainer.insertAdjacentHTML('beforeend', `<button type="button" data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
             eventTableWrapper.innerHTML += `
                 <div id="eventRankContent_${classId}" class="tab-content${isActive}">
                     <h3>${playerClass}クラス 種目別ランキング</h3>
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h4>${playerClass}クラス - ${EVENT_NAMES[event]}</h4>
                             <table id="eventRankContent_${classId}_${event}">
                                 <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
-                                <tbody><!-- JSでデータ挿入 --></tbody>
+                                <tbody></tbody>
                             </table>
                         </div>`).join('')}
                 </div>`;
@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tabContainer = document.getElementById(tabContainerId);
         if (!tabContainer) return;
         tabContainer.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
+            if (e.target.matches('button.tab-btn')) {
                 const playerClass = e.target.dataset.class;
                 const classId = playerClass.replace(/\s/g, '');
                 tabContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));

@@ -145,7 +145,7 @@ function renderTotalRanking() {
     const classId = selectedClass.replace(/\s/g, '');
     totalTableWrapper.innerHTML = `
             <div id="totalRankContent_${classId}" class="tab-content active">
-                <h3>${playerClass}クラス 総合得点ランキング</h3>
+                <h3>${selectedClass}クラス 総合得点ランキング</h3>
                 <table id="class${classId}_playersTable">
                     <thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead>
                     <tbody></tbody>

@@ -168,7 +168,7 @@ function renderTotalRanking() {
     totalTableWrapper.innerHTML = `
 
             <div id="totalRankContent_${classId}" class="tab-content active">
-                <h3>${playerClass}クラス 総合得点ランキング</h3>
+                <h3>${selectedClass}クラス 総合得点ランキング</h3>
                 <table id="class${classId}_playersTable">
                     <thead><tr><th>順位</th><th>名前</th><th>合計</th></tr></thead>
                     <tbody></tbody>
@@ -223,7 +223,7 @@ function renderEventRanking() {
             <div id="eventRankContent_${classId}" class="tab-content active">
                 <div class="event-rank-wrapper">
                     <div data-event="${eventVal}" class="active">
-                        <h3>${playerClass}クラス - ${EVENT_NAMES[eventVal]} ランキング</h3>
+                        <h3>${selectedClass}クラス - ${EVENT_NAMES[eventVal]} ランキング</h3>
                         <table>
                             <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
                             <tbody></tbody>
