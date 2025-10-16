@@ -55,27 +55,42 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
             }
 
             // GASから返されるデータが期待する形式か確認する
-            // GASからのデータ形式をより柔軟に解釈する
-            if (result.data && Array.isArray(result.data.players)) {
-                const players = result.data.players.map((p, index) => {
-                    // 各選手データに不足しているプロパティがあれば、デフォルト値を補う
-                    const scores = p.scores || {};
-                    const total = p.total || 0;
-                    
-                    // IDが毎回変わらないように、シートの行の順序に基づいて安定したIDを付与
-                    return {
-                        id: `${gender}-${index}`,
-                        name: p.name || '名無し',
-                        playerClass: p.playerClass || '初級',
-                        playerGroup: p.playerGroup || '1組',
-                        scores: scores,
-                        total: total,
-                    };
-                });
-                appStates[gender] = {
-                    competitionName: result.data.competitionName || '',
-                    players: players
-                };
+            if (result.data && Array.isArray(result.data.values)) {
+                const values = result.data.values;
+                if (values.length < 2) { // ヘッダーとデータ行がなければ空とみなす
+                    appStates[gender].players = [];
+                } else {
+                    const headers = values[0]; // name, playerClass, playerGroup, floor, ...
+                    const playerRows = values.slice(1);
+
+                    const nameIndex = headers.indexOf('name');
+                    const classIndex = headers.indexOf('playerClass');
+                    const groupIndex = headers.indexOf('playerGroup');
+
+                    const events = gender === 'men' 
+                        ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
+                        : ['floor', 'vault', 'bars', 'beam'];
+                    const eventIndices = events.map(e => headers.indexOf(e));
+
+                    appStates[gender].players = playerRows.map((row, index) => {
+                        const scores = {};
+                        let total = 0;
+                        eventIndices.forEach((eventIndex, i) => {
+                            const score = eventIndex !== -1 ? (parseFloat(row[eventIndex]) || 0) : 0;
+                            scores[events[i]] = score;
+                            total += score;
+                        });
+                        return {
+                            id: `${gender}-${index}`,
+                            name: nameIndex !== -1 ? row[nameIndex] : '名無し',
+                            playerClass: classIndex !== -1 ? row[classIndex] : '初級',
+                            playerGroup: groupIndex !== -1 ? row[groupIndex] : '1組',
+                            scores: scores,
+                            total: total,
+                        };
+                    });
+                }
+                appStates[gender].competitionName = result.data.competitionName || '';
             } else {
                 throw new Error(`Received invalid data structure from GAS for ${gender}.`);
             }            console.log(`Loaded ${appStates[gender].players.length} ${gender} players and competition name via GAS.`);
