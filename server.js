@@ -55,34 +55,21 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
             }
 
             // GASから返されるデータが期待する形式か確認する
-            if (result.data && Array.isArray(result.data.values)) {
-                const values = result.data.values;
-                // 1行目はヘッダー、2行目以降がデータ
-                const headers = values[0];
-                const playerRows = values.slice(1);
-
-                const nameIndex = headers.indexOf('name');
-                const classIndex = headers.indexOf('playerClass');
-                const groupIndex = headers.indexOf('playerGroup');
-                const totalIndex = headers.indexOf('total');
-
-                const events = gender === 'men' 
-                    ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
-                    : ['floor', 'vault', 'bars', 'beam'];
-                const eventIndices = events.map(e => headers.indexOf(e));
-
-                const players = playerRows.map((row, index) => {
-                    const scores = {};
-                    eventIndices.forEach((eventIndex, i) => {
-                        if (eventIndex !== -1) scores[events[i]] = parseFloat(row[eventIndex]) || 0;
-                    });
+            // GASからのデータ形式をより柔軟に解釈する
+            if (result.data && Array.isArray(result.data.players)) {
+                const players = result.data.players.map((p, index) => {
+                    // 各選手データに不足しているプロパティがあれば、デフォルト値を補う
+                    const scores = p.scores || {};
+                    const total = p.total || 0;
+                    
+                    // IDが毎回変わらないように、シートの行の順序に基づいて安定したIDを付与
                     return {
                         id: `${gender}-${index}`,
-                        name: row[nameIndex] || '名無し',
-                        playerClass: row[classIndex] || '初級',
-                        playerGroup: row[groupIndex] || '1組',
+                        name: p.name || '名無し',
+                        playerClass: p.playerClass || '初級',
+                        playerGroup: p.playerGroup || '1組',
                         scores: scores,
-                        total: parseFloat(row[totalIndex]) || 0,
+                        total: total,
                     };
                 });
 
@@ -282,11 +269,13 @@ server.listen(PORT, async () => {
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     // 起動時のデータ読み込みを一つずつ実行する
-    // これにより、片方のシートに問題があっても、もう片方は正常に読み込める
+    // API制限を避けるため、間にウェイトを入れる
     console.log("初期データの読み込みを開始します...");
     await loadStateFromSheet('women').catch(err => {
         console.error("\n\n[警告] 女子データの初期読み込みに失敗しました。", err.message, "\n");
     });
+    // API制限を避けるため、1秒待機
+    await new Promise(resolve => setTimeout(resolve, 1000));
     await loadStateFromSheet('men').catch(err => {
         console.error("\n\n[警告] 男子データの初期読み込みに失敗しました。", err.message, "\n");
     });
