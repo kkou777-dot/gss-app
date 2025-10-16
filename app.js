@@ -687,6 +687,19 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // アプリ説明書モーダル
+    const manualBtn = document.getElementById('manualBtn');
+    if (manualBtn) {
+        manualBtn.onclick = () => document.getElementById('manualModal').style.display = 'block';
+        document.getElementById('closeManualModal').onclick = () => document.getElementById('manualModal').style.display = 'none';
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('manualModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        });
+    }
+
     // 印刷処理
     const printBtn = document.getElementById('printBtn');
     if (printBtn) printBtn.addEventListener('click', () => {

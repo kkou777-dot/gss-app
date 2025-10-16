@@ -86,6 +86,7 @@
                     <button type="button">テンプレートを開く</button>
                 </a>
                 <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
+                <button id="manualBtn" type="button">アプリ説明書</button>
             </div>
             <hr style="margin: 1.5em 0;">
             <div id="addPlayerSection" style="margin-bottom:1em;">
@@ -122,6 +123,29 @@
     </footer>
 
     <div id="print-container"></div>
+    <!-- アプリ説明書モーダル -->
+    <div id="manualModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeManualModal">&times;</span>
+            <h2>アプリ説明書</h2>
+            <h3>アプリの利用可能規模について</h3>
+            <p>このアプリは、Render.comの無料プランで動作していることを前提として、以下の規模での利用を想定しています。</p>
+            <h4>推奨される大会規模</h4>
+            <ul>
+                <li><strong>管理・審判員:</strong> 5名程度</li>
+                <li><strong>出場選手数:</strong> 100名程度</li>
+                <li><strong>保護者などの同時閲覧者数:</strong> 300名程度</li>
+            </ul>
+            <p>上記の規模であれば、無料プランの範囲内で安定した動作が見込めます。</p>
+            <h4>より大きな大会での利用</h4>
+            <p>
+                選手数が500名、同時閲覧者数が500名を超えるような、より大規模な大会で利用する場合は、サーバーの性能がボトルネックになる可能性があります。
+                その際は、サーバー（Render.com）を有料プランにアップグレードすることで、より安定した動作を確保できます。
+            </p>
+            <p>ご不明な点があれば、いつでも開発者にご相談ください。</p>
+        </div>
+    </div>
+
     <!-- CSVヘルプモーダル -->
     <div id="csvHelpModal" class="modal">
         <div class="modal-content">
