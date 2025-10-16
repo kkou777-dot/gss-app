@@ -129,9 +129,13 @@ async function saveStateToSheet(gender) {
         players: playersForSheet
     };
     // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
-    // GAS側は e.postData.contents を JSON.parse して { gender, action, newState: { competitionName, players } } という構造を期待している
-    const payload = { gender: gender, action: 'save', newState: dataForGas };
-    const response = await axios.post(GAS_WEB_APP_URL, payload);
+    // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
+    const payload = {
+        gender: gender,
+        action: 'save',
+        ...dataForGas // competitionName と players を展開して payload に含める
+    };
+    const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
 
     const result = response.data;
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
