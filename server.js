@@ -97,8 +97,22 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
  */
 async function saveStateToSheet(gender) {
     const state = appStates[gender];
+    // GASに渡すためのデータ形式に変換する
+    const events = gender === 'men' 
+        ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
+        : ['floor', 'vault', 'bars', 'beam'];
+    
+    const playersForSheet = state.players.map(p => {
+        const scores = events.map(e => p.scores[e] || 0);
+        return [p.playerClass, p.playerGroup, '', p.name, ...scores, p.total];
+    });
+
+    const dataForGas = {
+        competitionName: state.competitionName,
+        players: playersForSheet
+    };
     // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
-    const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: state, action: 'save' });
+    const response = await axios.post(GAS_WEB_APP_URL, { gender, newState: dataForGas, action: 'save' });
 
     const result = response.data;
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
