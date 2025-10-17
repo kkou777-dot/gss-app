@@ -131,7 +131,7 @@ async function saveStateToSheet(gender) {
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
     // ここに到達した時点でHTTP通信は成功している。
     // GAS内部での処理失敗(success: false)も、GAS側で500エラーを返す設計なので、ここでは考慮不要。
-    console.log(`State for ${gender} saved to Sheet via GAS. Response:`, result.message);
+    console.log(`State for ${gender} saved to Sheet via GAS. Response:`, result?.message || 'No message received');
 }
 
 async function archiveSheetOnGAS(gender) {
