@@ -115,9 +115,10 @@ async function saveStateToSheet(gender) {
     
     const playersForSheet = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
-        // 合計点はGAS側で再計算されるため、送信データからは除外する
-        // GASが期待する [クラス, 組, (空欄), 名前, ...各種目得点] の順序で配列を作成
-        return [p.playerClass, p.playerGroup, '', p.name, ...scores];
+        // サーバー側で計算した合計点を取得
+        const total = p.total || 0;
+        // GASが期待する [クラス, 組, (空欄), 名前, ...各種目得点, 合計] の順序で配列を作成
+        return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
     });
 
     const dataForGas = {
