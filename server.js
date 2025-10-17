@@ -111,7 +111,7 @@ async function saveStateToSheet(gender) {
         : ['床', '跳馬', '段違い平行棒', '平均台'];
 
     // ★★★ 修正点: GASに渡すヘッダー情報を日本語で定義 ★★★
-    const headers = ['名前', 'クラス', '組', ...eventNames, '合計'];
+    const headers = ['クラス', '組', '', '名前', ...eventNames, '合計'];
     
     const playersForSheet = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
