@@ -27,7 +27,7 @@
 
     <div class="input-section">
         <div style="display:flex; align-items:center; gap:1em; flex-wrap: wrap;">
-            <label>クラス: <select id="inputClassSelect"><option value="C">Cクラス</option><option value="B">Bクラス</option><option value="A">Aクラス</option></select></label>
+            <label>クラス: <select id="inputClassSelect"></select></label>
             <label>組: <select id="inputGroupSelect"></select></label>
             <div class="reorder-switch" style="margin-left: auto;">
                 <label for="reorderModeToggle">並び替えモード:</label>
@@ -39,7 +39,7 @@
     </div>
 
     <div style="margin-top: 2em;">
-        <button class="back-button" onclick="location.href='index_men.html'">運営トップに戻る</button>
+        <button class="back-button" onclick="window.close()">ページを閉じる</button>
     </div>
 
     <footer>
@@ -47,7 +47,6 @@
     </footer>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <!-- ドラッグ＆ドロップライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="app_men.js"></script>
 </body>
