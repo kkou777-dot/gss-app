@@ -24,10 +24,6 @@
         </h1>
     </header>
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
-    <div class="save-container" style="margin-bottom: 1em;">
-        <button id="saveButton">スプレッドシートに保存</button>
-        <span id="saveStatus" style="color: green; font-weight: bold;"></span>
-    </div>
 
     <div class="input-section">
         <div style="display:flex; align-items:center; gap:1em; flex-wrap: wrap;">
@@ -60,24 +56,6 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <!-- ドラッグ＆ドロップライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <!-- 運営ページと共通のJSを読み込み -->
     <script src="app.js"></script>
-    <script>
-        // 自動保存機能の追加
-        let autoSaveTimer = null;
-        function scheduleAutoSave() {
-            // グローバルに定義されたトグルスイッチの状態を確認
-            const autoSaveToggle = document.getElementById('autoSaveToggle');
-            if (!autoSaveToggle || !autoSaveToggle.checked) {
-                return; // トグルがOFFなら何もしない
-            }
-
-            clearTimeout(autoSaveTimer);
-            autoSaveTimer = setTimeout(() => {
-                const saveButton = document.getElementById('saveButton');
-                if (saveButton) saveButton.click();
-            }, 3000); // 3秒後に保存
-        }
-    </script>
 </body>
 </html>
