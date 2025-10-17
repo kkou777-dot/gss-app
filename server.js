@@ -109,10 +109,8 @@ async function saveStateToSheet(gender) {
     
     const playersForSheet = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
-        // 合計点はGAS側で再計算されるため、送信データからは除外する
-        // CSVテンプレートの形式 [クラス, 組, (空), 名前, ...各種目得点] の順序で配列を作成
-        return [p.playerClass, p.playerGroup, '', p.name, ...scores];
         // GASが期待する [名前, クラス, 組, ...各種目得点] の順序で配列を作成
+        // この形式でないとGAS側で正しく解釈されない
         return [p.name, p.playerClass, p.playerGroup, ...scores];
     });
 
