@@ -517,13 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const rows = cleanText.split(/\r?\n/).filter(row => row.trim() !== ''); // 空行を除外
                 // 1行目(大会名)と2行目(ヘッダー)をスキップするため、slice(2)を使用
-                const newPlayers = rows.slice(2).map(row => {
+                const newPlayers = rows.slice(2).map((row, index) => { // index を追加
                     const cols = row.split(',');
                     // クラス名をそのまま使用し、空の場合は「初級」をデフォルトとする
                     const playerClass = cols[0]?.trim() || '初級';
 
                     const player = {
-                        id: `csv-${Date.now()}-${Math.random()}`, // ユニークIDを付与
+                        id: `${GENDER}-${index}`, // サーバー側のID生成ロジックと統一
                         playerClass: playerClass, // CSVから読み込んだクラス名をそのまま使用
                         // B列の数字に「組」を付与する。入力がなければ'1組'に。
                         playerGroup: cols[1]?.trim() ? `${cols[1].trim().normalize('NFKC')}組` : '1組',
