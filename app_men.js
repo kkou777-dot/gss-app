@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // UIを更新
                 console.log('CSV parsed. newPlayers:', newPlayers);
                 // サーバーに新しい状態を送信し、全クライアントを同期させる
-                socket.emit('viewerUpdate', { gender: GENDER, newState: appState });
+                socket.emit('viewerUpdateMen', appState);
                 // サーバーからのstateUpdateを待たずに、即時UIを更新する
                 updateAllUI();
                 alert(`${newPlayers.length}人の選手データを読み込みました。内容を確認し、問題なければ「スプレッドシートに保存」してください。`);
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appState.players.push(newPlayer);
         // サーバーに更新を通知し、UIを同期させる
-        socket.emit('viewerUpdate', { gender: GENDER, newState: appState });
+        socket.emit('viewerUpdateMen', appState);
 
         // 入力欄をクリア
         nameInput.value = '';
@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 1. 選手リストから該当選手を削除
                     appState.players = appState.players.filter(p => p.id !== playerId);
                     // 2. サーバーに更新を通知
-                    socket.emit('viewerUpdate', { gender: GENDER, newState: appState });
+                    socket.emit('viewerUpdateMen', appState);
                     // 3. UIを即時更新
                     updateAllUI();
                     alert(`「${player.name}」さんを削除しました。`);

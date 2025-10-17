@@ -112,6 +112,8 @@ async function saveStateToSheet(gender) {
         // 合計点はGAS側で再計算されるため、送信データからは除外する
         // CSVテンプレートの形式 [クラス, 組, (空), 名前, ...各種目得点] の順序で配列を作成
         return [p.playerClass, p.playerGroup, '', p.name, ...scores];
+        // GASが期待する [名前, クラス, 組, ...各種目得点] の順序で配列を作成
+        return [p.name, p.playerClass, p.playerGroup, ...scores];
     });
 
     const dataForGas = {
@@ -180,18 +182,30 @@ io.on('connection', async (socket) => {
     socket.emit('stateUpdateMen', appStates.men);
   });
 
-  // 運営者からの状態更新を受け取る (閲覧者向け)
-  socket.on('viewerUpdate', ({ gender, newState }) => {
-    if (newState && typeof newState === 'object' && ['women', 'men'].includes(gender)) {
-        // サーバー側の状態を、現在の状態と新しい状態をマージして更新する
-        appStates[gender] = { ...appStates[gender], ...newState };
+  // 運営者からの状態更新を受け取る (女子用)
+  socket.on('viewerUpdateWomen', (newState) => {
+      if (newState && typeof newState === 'object') {
+          // サーバー側の女子データを更新
+          appStates.women = { ...appStates.women, ...newState };
+          // 全クライアントに女子の新しい状態をブロードキャスト
+          io.emit('stateUpdate', appStates.women);
+          console.log('Received viewerUpdateWomen, broadcasting new women state.');
+      } else {
+          console.warn('Invalid viewerUpdateWomen received:', newState);
+      }
+  });
 
-        // 対応するイベント名で、全員に新しい状態をブロードキャスト
-        const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-        io.emit(eventName, appStates[gender]);
-    } else {
-        console.warn('Invalid viewerUpdate received:', { gender, newState });
-    }
+  // 運営者からの状態更新を受け取る (男子用)
+  socket.on('viewerUpdateMen', (newState) => {
+      if (newState && typeof newState === 'object') {
+          // サーバー側の男子データを更新
+          appStates.men = { ...appStates.men, ...newState };
+          // 全クライアントに男子の新しい状態をブロードキャスト
+          io.emit('stateUpdateMen', appStates.men);
+          console.log('Received viewerUpdateMen, broadcasting new men state.');
+      } else {
+          console.warn('Invalid viewerUpdateMen received:', newState);
+      }
   });
 
   // 新しいイベント: 選手一人の点数更新を受け取る
