@@ -239,7 +239,7 @@ io.on('connection', async (socket) => {
       // 更新後の状態を、入力者以外の全クライアントにブロードキャスト
       // ★★★ 修正点: genderに応じて正しいイベント名を指定し、io.emitで全クライアントに送信する ★★★
       const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-      io.emit(eventName, appStates[gender]); // 修正: ここでブロードキャストする
+      io.emit(eventName, appStates[gender]);
     } else {
       console.warn(`Player with id ${playerId} not found for gender ${gender}.`);
     }
