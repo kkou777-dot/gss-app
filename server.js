@@ -55,42 +55,33 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
             }
 
             // GASから返されるデータが期待する形式か確認する
-            if (result.data && Array.isArray(result.data.values)) {
-                const values = result.data.values;
-                if (values.length < 2) { // ヘッダーとデータ行がなければ空とみなす
-                    appStates[gender].players = [];
-                } else {
-                    const headers = values[0]; // name, playerClass, playerGroup, floor, ...
-                    const playerRows = values.slice(1);
-
-                    const nameIndex = headers.indexOf('name');
-                    const classIndex = headers.indexOf('playerClass');
-                    const groupIndex = headers.indexOf('playerGroup');
-
-                    const events = gender === 'men' 
-                        ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
-                        : ['floor', 'vault', 'bars', 'beam'];
-                    const eventIndices = events.map(e => headers.indexOf(e));
-
-                    appStates[gender].players = playerRows.map((row, index) => {
-                        const scores = {};
-                        let total = 0;
-                        eventIndices.forEach((eventIndex, i) => {
-                            const score = eventIndex !== -1 ? (parseFloat(row[eventIndex]) || 0) : 0;
-                            scores[events[i]] = score;
-                            total += score;
-                        });
-                        return {
-                            id: `${gender}-${index}`,
-                            name: nameIndex !== -1 ? row[nameIndex] : '名無し',
-                            playerClass: classIndex !== -1 ? row[classIndex] : '初級',
-                            playerGroup: groupIndex !== -1 ? row[groupIndex] : '1組',
-                            scores: scores,
-                            total: total,
-                        };
-                    });
-                }
-                appStates[gender].competitionName = result.data.competitionName || '';
+            // GASからのデータ形式をより柔軟に解釈する
+            if (result.data && Array.isArray(result.data.players)) {
+                const players = result.data.players.map((p, index) => {
+                    // 各選手データに不足しているプロパティがあれば、デフォルト値を補う
+                    const scores = p.scores || {};
+                    let total = 0;
+                    // GASからtotalが送られてこない場合も考慮して再計算
+                    if (p.total !== undefined) {
+                        total = p.total;
+                    } else {
+                        total = Object.values(scores).reduce((sum, score) => sum + (parseFloat(score) || 0), 0);
+                    }
+                    
+                    // IDが毎回変わらないように、シートの行の順序に基づいて安定したIDを付与
+                    return {
+                        id: `${gender}-${index}`,
+                        name: p.name || '名無し',
+                        playerClass: p.playerClass || '初級',
+                        playerGroup: p.playerGroup || '1組',
+                        scores: scores,
+                        total: total,
+                    };
+                });
+                appStates[gender] = {
+                    competitionName: result.data.competitionName || '',
+                    players: players
+                };
             } else {
                 throw new Error(`Received invalid data structure from GAS for ${gender}.`);
             }            console.log(`Loaded ${appStates[gender].players.length} ${gender} players and competition name via GAS.`);
@@ -120,8 +111,8 @@ async function saveStateToSheet(gender) {
     const playersForSheet = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
         // 合計点はGAS側で再計算されるため、送信データからは除外する
-        // [名前, クラス, 組, ...各種目得点] の順序で配列を作成
-        return [p.name, p.playerClass, p.playerGroup, ...scores];
+        // [クラス, 組, (空), 名前, ...各種目得点] の順序で配列を作成
+        return [p.playerClass, p.playerGroup, '', p.name, ...scores];
     });
 
     const dataForGas = {
@@ -129,13 +120,13 @@ async function saveStateToSheet(gender) {
         players: playersForSheet
     };
     // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
-    // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
+    // GAS側は e.postData.contents を JSON.parse して { gender, action, newState: { competitionName, players } } という構造を期待している
     const payload = {
         gender: gender,
         action: 'save',
-        ...dataForGas // competitionName と players を展開して payload に含める
+        newState: dataForGas
     };
-    const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
+    const response = await axios.post(GAS_WEB_APP_URL, payload);
 
     const result = response.data;
     // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
