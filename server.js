@@ -237,9 +237,9 @@ io.on('connection', async (socket) => {
       targetPlayer.total = newTotal;
 
       // 更新後の状態を、入力者以外の全クライアントにブロードキャスト
-      // ★★★ 修正点: genderに応じて正しいイベント名を指定する ★★★
+      // ★★★ 修正点: genderに応じて正しいイベント名を指定し、io.emitで全クライアントに送信する ★★★
       const eventName = gender === 'men' ? 'stateUpdateMen' : 'stateUpdate';
-      io.emit(eventName, appStates[gender]);
+      io.emit(eventName, appStates[gender]); // 修正: ここでブロードキャストする
     } else {
       console.warn(`Player with id ${playerId} not found for gender ${gender}.`);
     }
@@ -253,8 +253,6 @@ io.on('connection', async (socket) => {
       if (typeof callback === 'function') callback({ success: false, message: '無効な性別です。' });
       return;
     }
-
-    // UIの即時反映は'updatePlayerScore'で行うため、ここではブロードキャストは不要
 
     try {
       // 1. 現在のサーバーの状態をスプレッドシートに保存する
