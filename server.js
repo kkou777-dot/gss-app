@@ -106,6 +106,12 @@ async function saveStateToSheet(gender) {
     const events = gender === 'men' 
         ? ['floor', 'pommel', 'rings', 'vault', 'pbars', 'hbar'] 
         : ['floor', 'vault', 'bars', 'beam'];
+    const eventNames = gender === 'men'
+        ? ['床', 'あん馬', 'つり輪', '跳馬', '平行棒', '鉄棒']
+        : ['床', '跳馬', '段違い平行棒', '平均台'];
+
+    // ★★★ 修正点: GASに渡すヘッダー情報を日本語で定義 ★★★
+    const headers = ['名前', 'クラス', '組', ...eventNames, '合計'];
     
     const playersForSheet = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
@@ -123,7 +129,8 @@ async function saveStateToSheet(gender) {
     const payload = {
         gender: gender,
         action: 'save',
-        ...dataForGas // competitionName と players を newState でラップせず、直接展開する
+        ...dataForGas, // competitionName と players を展開
+        headers: headers // ★★★ 日本語ヘッダー配列を追加 ★★★
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
 
