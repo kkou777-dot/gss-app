@@ -33,6 +33,9 @@ const appStates = {
     }
 };
 
+// GASとの通信が競合しないようにするためのロックフラグ
+let isGasCommunicationLocked = false;
+
 /**
  * GAS経由でスプレッドシートから最新の状態を読み込み、appStatesを更新する
  */
@@ -101,6 +104,14 @@ async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
  * GAS経由で現在のappStateをスプレッドシートに保存する
  */
 async function saveStateToSheet(gender) {
+    // ロックがかかっている場合は、少し待ってから再試行する
+    while (isGasCommunicationLocked) {
+        console.log('GAS communication is locked, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5秒待機
+    }
+
+    isGasCommunicationLocked = true; // 通信開始前にロック
+    try {
     const state = appStates[gender];
     // GASに渡すためのデータ形式に変換する
     const events = gender === 'men' 
@@ -135,11 +146,18 @@ async function saveStateToSheet(gender) {
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
 
-    const result = response.data;
-    // axiosはステータスコードが2xxでない場合、自動的にエラーをスローするため、
-    // ここに到達した時点でHTTP通信は成功している。
-    // GAS内部での処理失敗(success: false)も、GAS側で500エラーを返す設計なので、ここでは考慮不要。
-    console.log(`State for ${gender} saved to Sheet via GAS. Response:`, result?.message || 'No message received');
+        const result = response.data;
+        console.log(`State for ${gender} saved to Sheet via GAS. Response:`, result?.message || 'No message received');
+        return result; // 成功した結果を返す
+    } catch (error) {
+        console.error(`Error in saveStateToSheet for ${gender}:`, error.message);
+        // エラーが発生した場合でも、他の処理が続行できるようにエラーを再スローする
+        throw error;
+    } finally {
+        // 処理が成功しても失敗しても、必ずロックを解除する
+        isGasCommunicationLocked = false;
+        console.log('GAS communication lock released.');
+    }
 }
 
 async function archiveSheetOnGAS(gender) {
@@ -268,7 +286,7 @@ io.on('connection', async (socket) => {
 
       // 2. 保存が成功したことをリクエスト元のクライアントにコールバックで通知
       if (typeof callback === 'function') callback({ success: true, message: 'スプレッドシートに保存しました' });
-    } catch (error) {
+    } catch (error) { // saveStateToSheetからスローされたエラーをキャッチ
       // エラー処理は変更なし
       // ... (既存のエラー処理コード)
       console.error(`GAS経由での${gender}データ保存中にエラーが発生しました:`, error.message);
