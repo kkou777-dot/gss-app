@@ -53,7 +53,8 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <!-- ドラッグ＆ドロップライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="app_men.js"></script>
+    <!-- 運営ページと共通のJSを読み込み -->
+    <script src="app_men.js"></script> <!-- ★★★ 修正点: app.js から app_men.js に変更 ★★★ -->
     <script>
         // 自動保存機能の追加
         let autoSaveTimer = null;
