@@ -37,70 +37,6 @@ const appStates = {
 let isGasCommunicationLocked = false;
 
 /**
- * GAS経由でスプレッドシートから最新の状態を読み込み、appStatesを更新する
- */
-async function loadStateFromSheet(gender = 'women', maxRetries = 3) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            // 2回目以降のリトライの場合、少し待機する (1秒, 2秒, 4秒...)
-            if (attempt > 1) {
-                const delay = Math.pow(2, attempt - 2) * 1000;
-                console.log(`[Attempt ${attempt}/${maxRetries}] Retrying to load ${gender} data via GAS in ${delay / 1000}s...`);
-                await new Promise(res => setTimeout(res, delay));
-            }
-
-            const response = await axios.get(`${GAS_WEB_APP_URL}?gender=${gender}`, {
-                timeout: 15000 // 15秒でタイムアウト
-            });
-            const result = response.data; // axiosは自動でJSONをパースし、.dataに格納します
-            if (!result.success) {
-                throw new Error(`GAS returned an error: ${result.message}`);
-            }
-
-            // GASから返されるデータが期待する形式か確認する
-            if (result.data && Array.isArray(result.data.players)) {
-                const players = result.data.players.map((p, index) => {
-                    // 各選手データに不足しているプロパティがあれば、デフォルト値を補う
-                    const scores = p.scores || {};
-                    let total = 0;
-                    // GASからtotalが送られてこない場合も考慮して再計算
-                    if (p.total !== undefined) {
-                        total = p.total;
-                    } else {
-                        total = Object.values(scores).reduce((sum, score) => sum + (parseFloat(score) || 0), 0);
-                    }
-                    
-                    // IDが毎回変わらないように、シートの行の順序に基づいて安定したIDを付与
-                    return {
-                        id: `${gender}-${index}`,
-                        name: p.name || '名無し',
-                        playerClass: p.playerClass || '初級',
-                        playerGroup: p.playerGroup || '1組',
-                        scores: scores,
-                        total: total,
-                    };
-                });
-                appStates[gender] = {
-                    competitionName: result.data.competitionName || '',
-                    players: players
-                };
-            } else {
-                throw new Error(`Received invalid data structure from GAS for ${gender}.`);
-            }            console.log(`Loaded ${appStates[gender].players.length} ${gender} players and competition name via GAS.`);
-            return; // 成功したので関数を抜ける
-        } catch (error) {
-            // axiosのエラーはより詳細な情報を持つため、それを活用します
-            const errorMessage = error.response ? `status ${error.response.status}` : error.message;
-            console.error(`[Attempt ${attempt}/${maxRetries}] Error loading state via GAS for ${gender}:`, errorMessage);
-            if (attempt === maxRetries) {
-                console.error(`Failed to load ${gender} data via GAS after ${maxRetries} attempts.`);
-                throw error; // 最終的に失敗した場合はエラーをスローする
-            }
-        }
-    }
-}
-
-/**
  * GAS経由で現在のappStateをスプレッドシートに保存する
  */
 async function saveStateToSheet(gender) {
@@ -121,26 +57,25 @@ async function saveStateToSheet(gender) {
         ? ['床', 'あん馬', 'つり輪', '跳馬', '平行棒', '鉄棒']
         : ['床', '跳馬', '段違い平行棒', '平均台'];
 
-    // ★★★ 修正点: GASに渡すヘッダー情報を日本語で定義 ★★★
+    // 1. ヘッダー行を定義
     const headers = ['クラス', '組', '', '名前', ...eventNames, '合計'];
     
-    // ★★★ 抜本的修正: ヘッダーと選手データを結合した「完成形」のデータを作成 ★★★
-    // 1. 選手データ部分を「配列の配列」として作成
+    // 2. 選手データ部分を「配列の配列」として作成
     const playerRows = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
         const total = p.total || 0;
         return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
     });
 
-    // 2. ヘッダー行と選手データ行を結合
+    // 3. ヘッダー行と選手データ行を結合して、シートに書き込む「完成形」のデータを作成
     const sheetData = [headers, ...playerRows];
 
-    // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
+    // 4. GASに送信するデータを作成
     const payload = {
         gender: gender,
         action: 'save',
         competitionName: state.competitionName,
-        sheetData: sheetData // ★★★ 完成形のデータを 'sheetData' として送信 ★★★
+        sheetData: sheetData // 完成形のデータを 'sheetData' というキーで送信
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
 
@@ -319,23 +254,7 @@ const PORT = process.env.PORT || 3000;
 
 // 1. 最初にサーバーを起動させる
 server.listen(PORT, async () => {
-    console.log(`Server listening on port ${PORT}`);
-    
-    // 2. サーバー起動後に、バックグラウンドで初期データを読み込む
-    // デプロイを安定させるため、少し待ってから実行する
-    console.log("サーバーが起動しました。3秒後に初期データの読み込みを開始します...");
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // 起動時のデータ読み込みを一つずつ実行する
-    // API制限を避けるため、間にウェイトを入れる
-    console.log("初期データの読み込みを開始します...");
-    await loadStateFromSheet('women').catch(err => {
-        console.error("\n\n[警告] 女子データの初期読み込みに失敗しました。", err.message, "\n");
-    });
-    // API制限を避けるため、1秒待機
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    await loadStateFromSheet('men').catch(err => {
-        console.error("\n\n[警告] 男子データの初期読み込みに失敗しました。", err.message, "\n");
-    });
-    console.log("初期データの読み込み処理が完了しました。");
+    console.log(`Server listening on port ${PORT}.`);
+    console.log("サーバーはクリーンな状態で起動しました。");
+    console.log("スプレッドシートからの自動データ読み込みは行われません。");
 });
