@@ -595,9 +595,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 appState.lastUpdated = new Date().toLocaleTimeString();
 
                 // UIを更新
-                console.log('CSV parsed. newPlayers:', newPlayers);
                 // サーバーに新しい状態を送信し、全クライアントを同期させる
                 socket.emit('viewerUpdateWomen', appState);
+                console.log('CSV parsed. newPlayers:', newPlayers);
                 // サーバーからのstateUpdateを待たずに、即時UIを更新する
                 updateAllUI(); 
                 alert(`${newPlayers.length}人の選手データを読み込みました。内容を確認し、問題なければ「スプレッドシートに保存」してください。`);

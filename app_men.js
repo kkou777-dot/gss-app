@@ -522,7 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ★★★ 修正点: 最終更新日時を付与する ★★★
                 appState.lastUpdated = new Date().toLocaleTimeString();
 
-                // UIを更新
                 console.log('CSV parsed. newPlayers:', newPlayers);
                 // サーバーに新しい状態を送信し、全クライアントを同期させる
                 socket.emit('viewerUpdateMen', appState);

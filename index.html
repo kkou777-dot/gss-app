@@ -46,6 +46,23 @@
         z-index: 9999;
         transition: top 0.3s;
       }
+
+      /* スマホ表示用のレイアウト調整 */
+      @media (max-width: 768px) {
+        .main-container {
+          display: flex;
+          flex-direction: column;
+        }
+        #score-input-link-section {
+          order: 1; /* 1番上に表示 */
+        }
+        .ranking-section {
+          order: 2; /* 2番目に表示 */
+        }
+        #data-registration-section {
+          order: 3; /* 3番目に表示 */
+        }
+      }
     </style>
 </head>
 <body>
@@ -71,38 +88,10 @@
         <input type="checkbox" id="finalizeToggle">
         <span id="finalizeStatus" style="font-weight: bold;">進行中</span>
     </div>
-    <div class="input-section">
-        <h3>データ登録</h3>
-        <div style="margin-bottom:1em;">
-            <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
+    <div class="main-container">
+        <div id="score-input-link-section" class="input-section" style="text-align: center; padding: 1em;">
+            <button style="padding: 1em 2em; font-size: 1.2em;" onclick="window.open('input.html', '_blank')">点数入力ページへ</button>
         </div>
-        <hr style="margin: 1.5em 0;">
-        <div class="csv-upload-area" style="margin-bottom:1em;">
-            <label for="csvInput">CSVファイルから一括登録:</label>
-            <input type="file" id="csvInput" accept=".csv">
-            <button id="csvUploadBtn">CSV読み込み</button>
-            <!-- テンプレート用ボタン -->
-            <a href="https://docs.google.com/spreadsheets/d/1vYNfVoS_Ri53BkI0CLblogJ_CnD1dcaIYma7hcbNFQc/copy?usp=sharing&new=true&headers=true&names=%E5%90%8D%E5%89%8D,%E3%82%AF%E3%83%A9%E3%82%B9,%E7%B5%84,%E5%BA%8A,%E8%B7%B3%E9%A6%AC,%E6%AE%B5%E9%81%95%E3%81%84%E5%B9%B3%E8%A1%8C%E6%A3%92,%E5%B9%B3%E5%9D%87%E5%8F%B0" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
-                <button type="button">テンプレートを開く</button>
-            </a>
-            <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
-            <button id="manualBtn" type="button">アプリ説明書</button>
-            <button id="operationGuideBtn" type="button">大会当日の注意点</button>
-        </div>
-        <hr style="margin: 1.5em 0;">
-        <div id="addPlayerSection" style="margin-bottom:1em;">
-            <label>選手を個別に追加:</label>
-            <input type="text" id="newPlayerName" placeholder="選手名">
-            <select id="newPlayerClass"><option value="初級">初級クラス</option><option value="中級">中級クラス</option><option value="上級">上級クラス</option></select>
-            <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
-            <button id="addPlayerBtn">選手を追加</button>
-        </div>
-    </div>
-    <div class="input-section" style="text-align: center; padding: 1em;">
-        <button style="padding: 1em 2em; font-size: 1.2em;" onclick="window.open('input.html', '_blank')">点数入力ページへ</button>
-    </div>
-
-    <div class="container">
         <!-- クラス別 総合得点ランキング -->
         <div class="ranking-section">
             <div class="tabs" id="totalRankTabs">
@@ -120,6 +109,32 @@
             </div>
             <div class="table-wrapper" id="eventRankTableWrapper">
                 <!-- JavaScriptで動的にコンテンツが生成されます -->
+            </div>
+        </div>
+        <div id="data-registration-section" class="input-section">
+            <h3>データ登録</h3>
+            <div style="margin-bottom:1em;">
+                <label>大会名: <input type="text" id="competitionNameInput" placeholder="例: ○○大会" style="width: 20em;"></label>
+            </div>
+            <hr style="margin: 1.5em 0;">
+            <div class="csv-upload-area" style="margin-bottom:1em;">
+                <label for="csvInput">CSVファイルから一括登録:</label>
+                <input type="file" id="csvInput" accept=".csv">
+                <button id="csvUploadBtn">CSV読み込み</button>
+                <a href="https://docs.google.com/spreadsheets/d/1vYNfVoS_Ri53BkI0CLblogJ_CnD1dcaIYma7hcbNFQc/copy" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                    <button type="button">テンプレートを開く</button>
+                </a>
+                <button id="csvHelpBtn" type="button">CSVデータの作り方</button>
+                <button id="manualBtn" type="button">アプリ説明書</button>
+                <button id="operationGuideBtn" type="button">大会当日の注意点</button>
+            </div>
+            <hr style="margin: 1.5em 0;">
+            <div id="addPlayerSection" style="margin-bottom:1em;">
+                <label>選手を個別に追加:</label>
+                <input type="text" id="newPlayerName" placeholder="選手名">
+                <select id="newPlayerClass"><option value="初級">初級クラス</option><option value="中級">中級クラス</option><option value="上級">上級クラス</option></select>
+                <input type="text" id="newPlayerGroup" placeholder="組 (例: 1組)">
+                <button id="addPlayerBtn">選手を追加</button>
             </div>
         </div>
     </div>
