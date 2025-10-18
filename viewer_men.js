@@ -62,6 +62,11 @@ function setupSocketEventListeners(socket) {
         appState.competitionName = newState.competitionName;
         appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
+        // ★★★ 修正点: データ受信時に表示するクラスを決定する ★★★
+        const classes = getSortedUniqueClasses(appState.players);
+        if (classes.length > 0 && !appState.ui.selectedClass) {
+            appState.ui.selectedClass = classes[0];
+        }
         renderAll();
     });
     socket.on('disconnect', () => {
