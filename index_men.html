@@ -26,10 +26,13 @@
       /* ヘッダーコントロール */
       .header-controls {
         display: flex;
+        justify-content: space-between; /* 要素を両端に配置 */
         align-items: center;
-        justify-content: center;
+        width: 100%;
+      }
+      .header-controls .right-buttons {
+        display: flex;
         gap: 1em;
-        margin-bottom: 1em;
       }
 
       /* Pull to Refresh インジケーター */
@@ -84,19 +87,22 @@
 <header>
     <div id="pull-to-refresh-indicator">↓ 更新</div>
     <h1 id="competitionName">体操スコアシート (男子)</h1>
-    <div class="header-controls">
-        <a href="/viewer" target="_blank">速報(女)</a>
-        <a href="/viewer_men" target="_blank">速報(男)</a>
-        <button type="button" class="switch-gender-btn" onclick="location.href='index.html'">女子用</button>
+    <div class="header-controls" style="margin-bottom: 1em;">
+        <div></div> <!-- 左側のスペーサー -->
+        <div class="right-buttons">
+            <a href="/viewer" target="_blank">速報(女)</a>
+            <a href="/viewer_men" target="_blank">速報(男)</a>
+            <button type="button" class="switch-gender-btn" onclick="location.href='index.html'">女子用</button>
+        </div>
     </div>
 </header>
 
     <div id="connectionStatus" style="display: none; padding: 0.5em 1em; background-color: #fffbe6; border: 1px solid #ffe58f; border-radius: 4px; margin-bottom: 1em;"></div>
-    <div class="save-container" style="margin-bottom: 1em;">
+    <div class="save-container" style="margin-bottom: 1em; display: flex; justify-content: space-between; align-items: center;">
         <button id="saveButton">スプレッドシートに保存</button>
         <span id="saveStatus" style="color: green; font-weight: bold;"></span>
+        <button type="button" id="printBtn">大会結果の印刷</button>
     </div>
-    <button type="button" id="printBtn">このページを印刷する</button>
     <div style="margin-top: 1em; padding: 1em; border: 1px solid #b8daff; background-color: #cce5ff; border-radius: 8px;">
         <label for="finalizeToggle">大会を終了する:</label>
         <input type="checkbox" id="finalizeToggle">
