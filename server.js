@@ -125,7 +125,12 @@ async function saveStateToSheet(gender) {
     const headers = ['クラス', '組', '', '名前', ...eventNames, '合計'];
     
     // ★★★ 修正点: GASが期待する「オブジェクトの配列」形式を直接渡す ★★★
-    const playersForSheet = state.players;
+    const playersForSheet = state.players.map(p => {
+        const scores = events.map(e => p.scores[e] || 0);
+        const total = p.total || 0;
+        // GASが期待する [クラス, 組, (空欄), 名前, ...各種目得点, 合計] の順序で配列を作成
+        return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
+    });
 
     // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
     const payload = {
