@@ -702,6 +702,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 大会当日の注意点モーダル
+    const operationGuideBtn = document.getElementById('operationGuideBtn');
+    if (operationGuideBtn) {
+        operationGuideBtn.onclick = () => document.getElementById('operationGuideModal').style.display = 'block';
+        document.getElementById('closeOperationGuideModal').onclick = () => document.getElementById('operationGuideModal').style.display = 'none';
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('operationGuideModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        });
+    }
+
     // 印刷処理
     const printBtn = document.getElementById('printBtn');
     if (printBtn) printBtn.addEventListener('click', () => {
