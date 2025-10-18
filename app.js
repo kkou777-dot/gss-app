@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scheduleAutoSave();
         }
         // ★★★ 修正点: 大会名の変更をサーバーに通知する ★★★
-        socket.emit('viewerUpdateWomen', { competitionName: e.target.value });
+        socket.emit('viewerUpdateWomen', { competitionName: appState.competitionName });
     });
 
     // 保存ボタン

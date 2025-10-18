@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scheduleAutoSave();
         }
         // ★★★ 修正点: 大会名の変更をサーバーに通知する ★★★
-        socket.emit('viewerUpdateMen', { competitionName: e.target.value });
+        socket.emit('viewerUpdateMen', { competitionName: appState.competitionName });
     });
 
     if (saveButton) saveButton.addEventListener('click', () => {
