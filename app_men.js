@@ -281,13 +281,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 各入力欄にイベントリスナーを追加
             playerRow.querySelectorAll('.score-input').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    socket.emit('updatePlayerScore', { gender: GENDER, playerId: player.id, scoreType: e.target.dataset.event, value: e.target.value });
-                    // 点数入力時にも自動保存をスケジュールする
-                    if (typeof window.scheduleAutoSave === 'function') {
-                        window.scheduleAutoSave();
+                // 'input'から'change'イベントに変更し、入力中のリアルタイム更新を停止
+                input.addEventListener('change', (e) => {
+                    const value = parseFloat(e.target.value) || 0;
+                    const event = e.target.dataset.event;
+                    const targetPlayer = appState.players.find(p => p.id === player.id);
+                    if (targetPlayer) {
+                        // ローカルのappStateのみを更新
+                        targetPlayer.scores[event] = value;
+                        // 合計点も再計算
+                        targetPlayer.total = EVENTS.reduce((sum, ev) => sum + (targetPlayer.scores[ev] || 0), 0);
+                        console.log(`Local state updated for ${player.name}, ${event}: ${value}`);
                     }
                 });
+            });
+        });
+
+        // この組の点数を保存するボタンを追加
+        const saveScoresBtnHTML = `
+            <div class="save-scores-container">
+                <button id="saveScoresBtn" class="button-primary">この組の点数を保存</button>
+                <span id="saveScoresStatus" class="save-status-mini"></span>
+            </div>
+        `;
+        playersArea.insertAdjacentHTML('beforeend', saveScoresBtnHTML);
+
+        document.getElementById('saveScoresBtn').addEventListener('click', () => {
+            const statusEl = document.getElementById('saveScoresStatus');
+            statusEl.textContent = '保存中...';
+            // 現在のappStateをサーバーに送信して全体を同期
+            socket.emit('viewerUpdateMen', appState, () => {
+                statusEl.textContent = `保存完了 (${new Date().toLocaleTimeString()})`;
             });
         });
 
@@ -402,8 +426,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.scheduleAutoSave === 'function') {
             window.scheduleAutoSave();
         }
-        // ★★★ 修正点: 大会名の変更をサーバーに通知する ★★★
-        socket.emit('viewerUpdateMen', { competitionName: appState.competitionName });
+        // 大会名の変更をサーバーに通知する
+        // 選手情報などを含むappState全体を送信し、データの欠落を防ぐ
+        socket.emit('viewerUpdateMen', appState);
     });
 
     if (saveButton) saveButton.addEventListener('click', () => {
@@ -624,9 +649,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // 1. 選手リストから該当選手を削除
                     appState.players = appState.players.filter(p => p.id !== playerId);
                     // 2. サーバーに更新を通知
-                    socket.emit('viewerUpdateMen', appState);
-                    // 3. UIを即時更新
-                    updateAllUI();
+                    socket.emit('viewerUpdateMen', appState); // これにより他のクライアントも更新される
+                    e.target.closest('tr').remove(); // 画面から行を直接削除し、UI全体再描画を避ける
                     alert(`「${player.name}」さんを削除しました。`);
                 }
             }
@@ -709,8 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${EVENTS.map(e => `<th>${EVENT_NAMES[e]}</th>`).join('')}
                             </tr>
                         </thead>
-                        <tbody>
-                            ${(() => {
+                        <tbody>${(() => {
                                 let printRank = 1;
                                 return classPlayers.map((p, index) => {
                                     if (index > 0 && p.total < classPlayers[index - 1].total) {
@@ -718,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                     return `
                                 <tr>
-                                    <td>${printRank}</td>
+                                    <td class="rank">${printRank}</td>
                                     <td>${p.name}</td>
                                     <td>${(p.total || 0).toFixed(3)}</td>
                                     ${EVENTS.map(e => `<td>${(p.scores?.[e] || 0).toFixed(3)} (${eventRanks[e].get(p.id) || '-'})</td>`).join('')}
@@ -726,8 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             `}).join('');
                             })()}
                         </tbody>
-                    </table>`;
-                page.innerHTML = tableHTML;
+                    </table>`;                page.innerHTML = tableHTML;
                 printContainer.appendChild(page);
             }
         });

@@ -138,30 +138,24 @@ io.on('connection', async (socket) => {
   });
 
   // 運営者からの状態更新を受け取る (女子用)
-  socket.on('viewerUpdateWomen', (newState) => {
+  socket.on('viewerUpdateWomen', (newState, callback) => {
     if (newState && typeof newState === 'object') {
-        // ★★★ 抜本的修正: 受け取った更新を、男女両方の状態に適用する ★★★
         appStates.women = { ...appStates.women, ...newState };
-        appStates.men = { ...appStates.men, ...newState }; // 男子データも更新
-        // 全クライアントにそれぞれの新しい状態をブロードキャスト
         io.emit('stateUpdate', appStates.women);
-        io.emit('stateUpdateMen', appStates.men);
-        console.log('Received viewerUpdateWomen, broadcasting new state to ALL clients.');
+        console.log('Received viewerUpdateWomen, broadcasting new state to women clients.');
+        if (typeof callback === 'function') callback(); // クライアントに処理完了を通知
     } else {
         console.warn('Invalid viewerUpdateWomen received:', newState);
     }
   });
 
   // 運営者からの状態更新を受け取る (男子用)
-  socket.on('viewerUpdateMen', (newState) => {
+  socket.on('viewerUpdateMen', (newState, callback) => {
     if (newState && typeof newState === 'object') {
-        // ★★★ 抜本的修正: 受け取った更新を、男女両方の状態に適用する ★★★
-        appStates.women = { ...appStates.women, ...newState }; // 女子データも更新
         appStates.men = { ...appStates.men, ...newState };
-        // 全クライアントにそれぞれの新しい状態をブロードキャスト
-        io.emit('stateUpdate', appStates.women);
         io.emit('stateUpdateMen', appStates.men);
-        console.log('Received viewerUpdateMen, broadcasting new state to ALL clients.');
+        console.log('Received viewerUpdateMen, broadcasting new state to men clients.');
+        if (typeof callback === 'function') callback(); // クライアントに処理完了を通知
     } else {
         console.warn('Invalid viewerUpdateMen received:', newState);
     }
