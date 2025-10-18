@@ -62,9 +62,10 @@ function setupSocketEventListeners(socket) {
         appState.competitionName = newState.competitionName;
         appState.lastUpdated = newState.lastUpdated;
         appState.players = newState.players;
-        // ★★★ 修正点: データ受信時に表示するクラスを決定する ★★★
+        // ★★★ 修正点: データ受信時に表示すべきクラスを確実に設定する ★★★
         const classes = getSortedUniqueClasses(appState.players);
-        if (classes.length > 0 && !appState.ui.selectedClass) {
+        // 現在選択中のクラスが新しいデータに存在しない、または何も選択されていない場合、リストの先頭のクラスを選択する
+        if (classes.length > 0 && !classes.includes(appState.ui.selectedClass)) {
             appState.ui.selectedClass = classes[0];
         }
         renderAll();
