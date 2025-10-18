@@ -124,21 +124,23 @@ async function saveStateToSheet(gender) {
     // ★★★ 修正点: GASに渡すヘッダー情報を日本語で定義 ★★★
     const headers = ['クラス', '組', '', '名前', ...eventNames, '合計'];
     
-    // ★★★ 修正点: GASが期待する「オブジェクトの配列」形式を直接渡す ★★★
-    const playersForSheet = state.players.map(p => {
+    // ★★★ 抜本的修正: ヘッダーと選手データを結合した「完成形」のデータを作成 ★★★
+    // 1. 選手データ部分を「配列の配列」として作成
+    const playerRows = state.players.map(p => {
         const scores = events.map(e => p.scores[e] || 0);
         const total = p.total || 0;
-        // GASが期待する [クラス, 組, (空欄), 名前, ...各種目得点, 合計] の順序で配列を作成
         return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
     });
+
+    // 2. ヘッダー行と選手データ行を結合
+    const sheetData = [headers, ...playerRows];
 
     // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
     const payload = {
         gender: gender,
         action: 'save',
         competitionName: state.competitionName,
-        players: playersForSheet,
-        headers: headers // ★★★ 日本語ヘッダー配列を追加 ★★★
+        sheetData: sheetData // ★★★ 完成形のデータを 'sheetData' として送信 ★★★
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
 
