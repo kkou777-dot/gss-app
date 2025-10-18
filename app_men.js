@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 編集ボタンのクリックイベントを .container に委譲
-    document.querySelector('.container')?.addEventListener('click', (e) => {
+    document.querySelector('.main-container')?.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const playerId = e.target.dataset.playerId;
             const player = appState.players.find(p => p.id === playerId);

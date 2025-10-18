@@ -684,8 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 編集ボタン（モーダル）
-    const container = document.querySelector('.container');
-    if (container) container.addEventListener('click', (e) => {
+    const mainContainer = document.querySelector('.main-container');
+    if (mainContainer) mainContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('edit-btn')) {
             const playerId = e.target.dataset.playerId;
             const player = appState.players.find(p => p.id === playerId);
