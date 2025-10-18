@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateRankingTables();
         // 入力エリアの更新
         updateInputArea();
+        updateAddPlayerClassSelect(); // 選手追加のクラス選択肢を更新
     }
 
     // 存在するユニークなクラス名を取得し、定義された順序でソートする
@@ -326,6 +327,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 並び替えライブラリの初期化
         initializeSortable(playersArea);
+    }
+
+    /**
+     * 「選手を個別に追加」セクションのクラス選択プルダウンを動的に更新する
+     */
+    function updateAddPlayerClassSelect() {
+        const classSelect = document.getElementById('newPlayerClass');
+        if (!classSelect) return;
+
+        const classes = getSortedUniqueClasses(appState.players);
+        let optionsHtml = '';
+
+        if (classes.length > 0) {
+            optionsHtml = classes.map(c => `<option value="${c}">${c}クラス</option>`).join('');
+        } else {
+            // 選手が一人も登録されていない場合、デフォルトの選択肢を用意する
+            optionsHtml = '<option value="初級">初級クラス</option><option value="中級">中級クラス</option><option value="上級">上級クラス</option>';
+        }
+        classSelect.innerHTML = optionsHtml;
     }
 
     function setupDynamicUI() {
