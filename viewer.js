@@ -100,10 +100,10 @@ function setupSocketEventListeners(socket) {
 
 // --- 描画処理 ---
 function renderAll() {
-    renderCompetitionName();
     renderTabsAndSelectors();
     renderTotalRanking();
     renderEventRanking();
+    renderCompetitionName();
 }
 
 function renderCompetitionName() {

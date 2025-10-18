@@ -79,10 +79,10 @@ function setupSocketEventListeners(socket) {
 }
 
 function renderAll() {
-    renderCompetitionName();
     renderTabsAndSelectors();
     renderTotalRanking();
     renderEventRanking();
+    renderCompetitionName();
 }
 
 function renderCompetitionName() {
