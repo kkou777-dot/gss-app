@@ -106,119 +106,104 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateRankingTables() {
-        const totalRankTabsContainer = document.getElementById('totalRankTabs');
-        const eventRankTabsContainer = document.getElementById('eventRankTabs');
-        const totalTableWrapper = document.getElementById('totalRankTableWrapper');
-        const eventTableWrapper = document.getElementById('eventRankTableWrapper');
+        const classTabsContainer = document.getElementById('rankingClassTabs');
+        const typeSelect = document.getElementById('rankingTypeSelect');
+        const tableWrapper = document.getElementById('rankingTableWrapper');
 
-        if (!totalRankTabsContainer || !eventRankTabsContainer || !totalTableWrapper || !eventTableWrapper) return;
+        if (!classTabsContainer || !typeSelect || !tableWrapper) return;
+
         const classes = getSortedUniqueClasses(appState.players);
 
-        // 既存のタブとコンテンツをクリア
-        totalRankTabsContainer.innerHTML = '';
-        eventRankTabsContainer.innerHTML = '';
-        totalTableWrapper.innerHTML = '';
-        eventTableWrapper.innerHTML = '';
+        // 状態を保持するための変数
+        let selectedClass = classTabsContainer.querySelector('.active')?.dataset.class || classes[0];
+        let selectedType = typeSelect.value || 'total';
+
+        // --- UIの骨組みを生成 ---
+
+        // 1. クラス選択タブ
+        classTabsContainer.innerHTML = classes.map(c =>
+            `<button type="button" data-class="${c}" class="tab-btn ${c === selectedClass ? 'active' : ''}">${c}クラス</button>`
+        ).join('');
+
+        // 2. ランキング種別ドロップダウン
+        let typeOptions = '<option value="total">総合得点</option>';
+        EVENTS.forEach(event => {
+            typeOptions += `<option value="${event}">${EVENT_NAMES[event]}</option>`;
+        });
+        typeSelect.innerHTML = typeOptions;
+        typeSelect.value = selectedType; // 以前の選択を復元
 
         if (classes.length === 0) return;
 
-        // タブとテーブルの骨組みを生成
-        classes.forEach((playerClass, index) => {
-            const classId = playerClass.replace(/\s/g, ''); // HTML ID用にスペースを除去
-            const isActive = index === 0 ? ' active' : '';
+        // --- テーブル描画 ---
+        function renderTable() {
+            tableWrapper.innerHTML = ''; // クリア
+            if (!selectedClass) return;
 
-            // 総合ランキングのタブとコンテンツを生成
-            totalRankTabsContainer.insertAdjacentHTML('beforeend', `<button type="button" data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
-            totalTableWrapper.innerHTML += `
-                <div id="totalRankContent_${classId}" class="tab-content${isActive}">
-                    <h3>${playerClass}クラス 総合得点ランキング</h3>
-                    <table id="class${classId}_playersTable">
+            if (selectedType === 'total') {
+                // 総合得点ランキング
+                const classPlayers = appState.players.filter(p => p.playerClass === selectedClass).sort((a, b) => b.total - a.total);
+                let tableHTML = `<h3>${selectedClass}クラス 総合得点ランキング</h3>
+                    <table>
                         <thead><tr><th>順位</th><th>名前</th><th>組</th><th>合計</th><th>操作</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>`;
-
-            // 種目別ランキングのタブとコンテンツを生成
-            eventRankTabsContainer.insertAdjacentHTML('beforeend', `<button type="button" data-class="${playerClass}" class="tab-btn${isActive}">${playerClass}クラス</button>`);
-            eventTableWrapper.innerHTML += `
-                <div id="eventRankContent_${classId}" class="tab-content${isActive}">
-                    <h3>${playerClass}クラス 種目別ランキング</h3>
-                    ${EVENTS.map(event => `
-                        <div data-event="${event}">
-                            <h4>${playerClass}クラス - ${EVENT_NAMES[event]}</h4>
-                            <table id="eventRankContent_${classId}_${event}">
-                                <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>`).join('')}
-                </div>`;
-        });
-
-        // 各テーブルのtbodyを埋める
-        classes.forEach(playerClass => {
-            populateTotalRankingTable(playerClass);
-            populateEventRankingTables(playerClass);
-        });
-
-        // 動的に生成されたタブに対してイベントリスナーを再設定
-        setupTabs('totalRankTabs');
-        setupTabs('eventRankTabs');
-    }
-
-    function populateTotalRankingTable(playerClass) {
-        const classId = playerClass.replace(/\s/g, '');
-        const tbody = document.querySelector(`#class${classId}_playersTable tbody`);
-        if (!tbody) return;
-
-        const classPlayers = appState.players
-            .filter(p => p.playerClass === playerClass)
-            .sort((a, b) => b.total - a.total);
-
-        let rank = 1;
-        const rowsHtml = classPlayers.map((player, i) => {
-            if (i > 0 && player.total < classPlayers[i - 1].total) {
-                rank = i + 1;
-            }
-            return `
-                <tr>
-                    <td>${rank}</td>
-                    <td>${player.name}</td>
-                    <td>${player.playerGroup || ''}</td> 
-                    <td>${player.total.toFixed(3)}</td>
-                    <td>
-                        <button class="edit-btn" data-player-id="${player.id}">編集</button>
-                        <button class="delete-btn" data-player-id="${player.id}">削除</button>
-                    </td>
-                </tr>`;
-        }).join('');
-        tbody.innerHTML = rowsHtml;
-    }
-
-    function populateEventRankingTables(playerClass) {
-        const classId = playerClass.replace(/\s/g, '');
-        EVENTS.forEach(event => {
-            const tbody = document.querySelector(`#eventRankContent_${classId}_${event} tbody`);
-            if (!tbody) return;
-
-            const eventPlayers = appState.players
-                .filter(p => p.playerClass === playerClass)
-                .sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
-
-            let rank = 1;
-            const rowsHtml = eventPlayers.map((player, i) => {
-                const currentScore = player.scores?.[event] || 0;
-                if (i > 0 && currentScore < (eventPlayers[i - 1].scores?.[event] || 0)) {
-                    rank = i + 1;
-                }
-                return `
-                    <tr>
+                        <tbody>`;
+                let rank = 1;
+                classPlayers.forEach((player, i) => {
+                    if (i > 0 && player.total < classPlayers[i - 1].total) rank = i + 1;
+                    tableHTML += `<tr>
+                        <td>${rank}</td>
+                        <td>${player.name}</td>
+                        <td>${player.playerGroup || ''}</td>
+                        <td>${player.total.toFixed(3)}</td>
+                        <td>
+                            <button class="edit-btn" data-player-id="${player.id}">編集</button>
+                            <button class="delete-btn" data-player-id="${player.id}">削除</button>
+                        </td>
+                    </tr>`;
+                });
+                tableHTML += `</tbody></table>`;
+                tableWrapper.innerHTML = tableHTML;
+            } else {
+                // 種目別ランキング
+                const event = selectedType;
+                const eventPlayers = appState.players.filter(p => p.playerClass === selectedClass).sort((a, b) => (b.scores?.[event] || 0) - (a.scores?.[event] || 0));
+                let tableHTML = `<h3>${selectedClass}クラス - ${EVENT_NAMES[event]} ランキング</h3>
+                    <table>
+                        <thead><tr><th>順位</th><th>名前</th><th>得点</th></tr></thead>
+                        <tbody>`;
+                let rank = 1;
+                eventPlayers.forEach((player, i) => {
+                    const currentScore = player.scores?.[event] || 0;
+                    if (i > 0 && currentScore < (eventPlayers[i - 1].scores?.[event] || 0)) rank = i + 1;
+                    tableHTML += `<tr>
                         <td>${rank}</td>
                         <td>${player.name}</td>
                         <td>${currentScore.toFixed(3)}</td>
                     </tr>`;
-            }).join('');
-            tbody.innerHTML = rowsHtml;
+                });
+                tableHTML += `</tbody></table>`;
+                tableWrapper.innerHTML = tableHTML;
+            }
+        }
+
+        // --- イベントリスナー設定 ---
+        classTabsContainer.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                selectedClass = e.target.dataset.class;
+                // 他のタブのactiveクラスを削除
+                classTabsContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                renderTable();
+            });
         });
+
+        typeSelect.addEventListener('change', (e) => {
+            selectedType = e.target.value;
+            renderTable();
+        });
+
+        // 初期描画
+        renderTable();
     }
 
     function updateInputArea() {

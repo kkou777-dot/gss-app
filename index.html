@@ -92,22 +92,15 @@
         <div id="score-input-link-section" class="input-section" style="text-align: center; padding: 1em;">
             <button style="padding: 1em 2em; font-size: 1.2em;" onclick="window.open('input.html', '_blank')">点数入力ページへ</button>
         </div>
-        <!-- クラス別 総合得点ランキング -->
         <div class="ranking-section">
-            <div class="tabs" id="totalRankTabs">
+            <div class="tabs" id="rankingClassTabs">
                 <!-- JavaScriptで動的にタブが生成されます -->
             </div>
-            <div class="table-wrapper" id="totalRankTableWrapper">
-                <!-- JavaScriptで動的にコンテンツが生成されます -->
+            <div class="ranking-controls" style="margin: 1em 0;">
+                <label for="rankingTypeSelect">ランキング種別:</label>
+                <select id="rankingTypeSelect"></select>
             </div>
-        </div>
-
-        <!-- 種目別ランキング -->
-        <div class="ranking-section">
-            <div class="tabs" id="eventRankTabs">
-                <!-- JavaScriptで動的にタブが生成されます -->
-            </div>
-            <div class="table-wrapper" id="eventRankTableWrapper">
+            <div class="table-wrapper" id="rankingTableWrapper">
                 <!-- JavaScriptで動的にコンテンツが生成されます -->
             </div>
         </div>
