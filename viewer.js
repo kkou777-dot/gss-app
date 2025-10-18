@@ -139,6 +139,7 @@ function renderTabsAndSelectors(appState, dom, classOrder) {
         dom.classTabs.innerHTML += `<button data-class="${playerClass}" class="${isActive ? 'active' : ''}">${playerClass}クラス</button>`;
     });
 
+    // ★★★ 修正点: 冗長なクラス切り替えロジックを削除し、ランキング表示/非表示処理をここに移動 ★★★
     // Ranking Sections
     const isTotal = rankingType === 'total';
     dom.totalRankingSection.classList.toggle('active', isTotal);
@@ -216,7 +217,7 @@ function renderEventRanking(appState, dom, events) {
                             <tbody></tbody>
                         </table>
                     </div>
-                </div>`;
+                </div>
             </div>`;
 
         const tbody = document.querySelector(`#eventRankContent_${classId} div[data-event="${eventVal}"] tbody`);
