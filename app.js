@@ -455,11 +455,12 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.competitionName = e.target.value;
         if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName || '体操スコアシート (女子)';
         // scheduleAutoSaveは各HTMLで定義されている
-        if (typeof window.scheduleAutoSave === 'function') {
-            window.scheduleAutoSave();
-        }
+        // if (typeof window.scheduleAutoSave === 'function') {
+        //     window.scheduleAutoSave();
+        // }
         // 大会名の変更をサーバーに通知する
         // 選手情報などを含むappState全体を送信し、データの欠落を防ぐ
+        appState.lastUpdated = new Date().toLocaleTimeString();
         socket.emit('viewerUpdateWomen', appState);
     });
 
@@ -533,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         appState.players.push(newPlayer);
+        appState.lastUpdated = new Date().toLocaleTimeString();
         // サーバーに更新を通知し、UIを同期させる
         socket.emit('viewerUpdateWomen', appState);
 
@@ -589,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 読み込んだデータをアプリの状態に反映
                 appState.competitionName = competitionNameFromCsv || appState.competitionName;
                 appState.players = newPlayers;
+                appState.lastUpdated = new Date().toLocaleTimeString();
 
                 // UIを更新
                 console.log('CSV parsed. newPlayers:', newPlayers);
