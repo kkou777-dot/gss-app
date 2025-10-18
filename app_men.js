@@ -148,8 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (i > 0 && player.total < classPlayers[i - 1].total) rank = i + 1;
                     tableHTML += `<tr>
                         <td>${rank}</td>
-                        <td class="player-name-cell">${player.name.replace(/ |　/g, '<br>')}</td>
-                        <td>${player.playerGroup || ''}</td>
+                        <td class="player-name-cell">${player.name.includes(' ') || player.name.includes('　') ? player.name.replace(/ |　/g, '<br>') : player.name}</td>
+                        <td>${(player.playerGroup || '').replace('組', '')}</td>
                         <td>${player.total.toFixed(3)}</td>
                         <td>
                             <button class="edit-btn" data-player-id="${player.id}">編集</button>
