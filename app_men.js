@@ -503,9 +503,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: `${GENDER}-${index}`, // サーバー側のID生成ロジックと統一
                         playerClass: playerClass, // CSVから読み込んだクラス名をそのまま使用
                         // B列の数字に「組」を付与する。入力がなければ'1組'に。
-                        playerGroup: cols[1]?.trim() ? `${cols[1].trim().normalize('NFKC')}組` : '1組',
-                        // C列は空欄なのでスキップ
-                        name: cols[3]?.trim() || '名無し', // D列
+                        playerGroup: cols[1]?.trim() ? `${cols[1].trim().normalize('NFKC')}組` : '1組', // B列
+                        // C列は意図的に空欄
+                        name: cols[3]?.trim() || '名無し', // D列から名前を取得
                         scores: {}, // scoresオブジェクトを初期化
                         total: 0
                     };
