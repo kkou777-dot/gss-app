@@ -310,6 +310,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('saveScoresBtn').addEventListener('click', () => {
             const statusEl = document.getElementById('saveScoresStatus');
             statusEl.textContent = '保存中...';
+            // ★★★ 修正点: 保存時にも最終更新日時を付与する ★★★
+            appState.lastUpdated = new Date().toLocaleTimeString();
             // 現在のappStateをサーバーに送信して全体を同期
             socket.emit('viewerUpdateMen', appState, () => {
                 statusEl.textContent = `保存完了 (${new Date().toLocaleTimeString()})`;
@@ -446,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 大会名の変更をサーバーに通知する
         // 選手情報などを含むappState全体を送信し、データの欠落を防ぐ
+        // ★★★ 修正点: 最終更新日時を付与する ★★★
         appState.lastUpdated = new Date().toLocaleTimeString();
         socket.emit('viewerUpdateMen', appState);
     });
@@ -515,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 読み込んだデータをアプリの状態に反映
                 appState.competitionName = competitionNameFromCsv || appState.competitionName;
                 appState.players = newPlayers;
+                // ★★★ 修正点: 最終更新日時を付与する ★★★
                 appState.lastUpdated = new Date().toLocaleTimeString();
 
                 // UIを更新
@@ -558,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         appState.players.push(newPlayer);
+                // ★★★ 修正点: 最終更新日時を付与する ★★★
                 appState.lastUpdated = new Date().toLocaleTimeString();
         // サーバーに更新を通知し、UIを同期させる
         socket.emit('viewerUpdateMen', appState);
