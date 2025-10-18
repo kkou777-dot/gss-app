@@ -114,11 +114,6 @@ function renderTabsAndSelectors(appState, dom, classOrder) {
         dom.classTabs.innerHTML += `<button data-class="${playerClass}" class="${isActive ? 'active' : ''}">${playerClass}クラス</button>`;
     });
 
-    // アクティブなタブを更新
-    dom.classTabs.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.class === appState.ui.selectedClass);
-    });
-
     // ランキングセクションの表示/非表示
     const isTotal = rankingType === 'total';
     dom.totalRankingSection.classList.toggle('active', isTotal);
