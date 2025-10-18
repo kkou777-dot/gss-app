@@ -60,12 +60,19 @@ async function saveStateToSheet(gender) {
     // 1. ヘッダー行を定義
     const headers = ['クラス', '組', '', '名前', ...eventNames, '合計'];
     
-    // ★★★ 修正点: GASが期待する「オブジェクトの配列」形式を直接渡す ★★★
+    // 2. 選手データを「配列の配列」形式に変換
+    const playersForSheet = state.players.map(p => {
+        const scores = events.map(e => p.scores[e] || 0);
+        const total = p.total || 0;
+        return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
+    });
+
+    // 3. GASに送信するデータを作成
     const payload = {
         gender: gender,
         action: 'save',
         competitionName: state.competitionName,
-        players: state.players, // 選手データをオブジェクトの配列として渡す
+        players: playersForSheet, // 変換後の選手データ（配列の配列）を渡す
         headers: headers // ヘッダー情報も渡す
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
