@@ -126,6 +126,12 @@ function renderTabsAndSelectors(appState, dom, classOrder) {
     const { selectedClass, rankingType } = appState.ui;
     const classes = getSortedUniqueClasses(appState.players, classOrder);
 
+    // ★★★ 修正点: 選択中のクラスがない場合、リストの最初のクラスを強制的に選択する ★★★
+    if (classes.length > 0 && !classes.includes(appState.ui.selectedClass)) {
+        // この変更により、`selectedClass`が常に有効な値を持つことが保証される
+        appState.ui.selectedClass = classes[0];
+    }
+
     // クラス選択タブの動的生成
     dom.classTabs.innerHTML = '';
     classes.forEach((playerClass, index) => {
