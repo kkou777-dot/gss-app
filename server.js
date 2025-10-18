@@ -132,16 +132,12 @@ async function saveStateToSheet(gender) {
         return [p.playerClass, p.playerGroup, '', p.name, ...scores, total];
     });
 
-    const dataForGas = {
-        competitionName: state.competitionName,
-        players: playersForSheet
-    };
-    // axios.postの第2引数にオブジェクトを渡すだけで、自動的にJSONに変換して送信します
     // GAS側は e.postData.contents を JSON.parse して { gender, action, competitionName, players } というフラットな構造を期待している
     const payload = {
         gender: gender,
         action: 'save',
-        ...dataForGas, // competitionName と players を展開
+        competitionName: state.competitionName,
+        players: playersForSheet, // ★★★ 修正点: オブジェクトではなく、配列の配列を直接渡す ★★★
         headers: headers // ★★★ 日本語ヘッダー配列を追加 ★★★
     };
     const response = await axios.post(GAS_WEB_APP_URL, payload, { headers: { 'Content-Type': 'application/json' } });
