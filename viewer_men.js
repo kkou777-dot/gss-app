@@ -1,91 +1,85 @@
-// --- アプリケーションの状態管理 ---
-// クラスの表示順序を定義 (数値が小さいほど上位)
-const CLASS_ORDER_MAP = {
-    '上級': 1,
-    '中級': 2,
-    '初級': 3,
-    // 他のクラスは動的に追加され、このマップにない場合はアルファベット順
-};
-const appState = {
-    competitionName: '',
-    lastUpdated: '',
-    players: [],
-    ui: {
-        selectedClass: '', // 初期選択クラスを空にする
-        rankingType: 'total',
-    }
-};
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 定数定義 ---
+    const CLASS_ORDER_MAP = { '上級': 1, '中級': 2, '初級': 3 };
+    const EVENTS = { floor: '床', pommel: 'あん馬', rings: 'つり輪', vault: '跳馬', pbars: '平行棒', hbar: '鉄棒' };
 
-// --- DOM要素のキャッシュ ---
-const dom = {}; // グローバルスコープで定義
-function cacheDOMElements() {
+    // --- DOM要素のキャッシュ ---
+    const dom = {};
     const ids = [
         'competitionName', 'lastUpdated', 'classTabs', 'rankingTypeSelect',
         'totalRankingSection', 'eventRankingSection', 'connectionStatus',
         'playerSearchInput', 'totalRankTableWrapper', 'eventRankTableWrapper'
     ];
     ids.forEach(id => dom[id] = document.getElementById(id));
-}
 
-function setupEventListeners() {
-    dom.classTabs.addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON') {
-            appState.ui.selectedClass = e.target.dataset.class;
-            renderAll();
+    // --- アプリケーションの状態 ---
+    let appState = {
+        competitionName: '',
+        lastUpdated: '',
+        players: [],
+        ui: {
+            selectedClass: '',
+            rankingType: 'total',
+            searchTerm: ''
         }
-    });
-    dom.rankingTypeSelect.addEventListener('change', (e) => {
-        appState.ui.rankingType = e.target.value;
-        renderAll();
-    });
-    dom.playerSearchInput.addEventListener('input', (e) => {
-        appState.ui.searchTerm = e.target.value.trim();
-        renderAll();
-    });
-}
+    };
 
-document.addEventListener('DOMContentLoaded', () => {
-    cacheDOMElements();
+    // --- イベントリスナー設定 ---
+    function setupEventListeners() {
+        dom.classTabs.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                appState.ui.selectedClass = e.target.dataset.class;
+                renderAll(appState, dom, CLASS_ORDER_MAP, EVENTS);
+            }
+        });
+        dom.rankingTypeSelect.addEventListener('change', (e) => {
+            appState.ui.rankingType = e.target.value;
+            renderAll(appState, dom, CLASS_ORDER_MAP, EVENTS);
+        });
+        dom.playerSearchInput.addEventListener('input', (e) => {
+            appState.ui.searchTerm = e.target.value.trim();
+            renderAll(appState, dom, CLASS_ORDER_MAP, EVENTS);
+        });
+    }
+
+    // --- Socket.IO設定 ---
+    function setupSocketEventListeners(socket) {
+        socket.on('connect', () => {
+            console.log('サーバーに接続しました。');
+            if (dom.connectionStatus) { dom.connectionStatus.textContent = ''; dom.connectionStatus.style.display = 'none'; }
+            socket.emit('requestInitialDataMen');
+        });
+        socket.on('stateUpdateMen', (newState) => {
+            console.log('State received from server');
+            appState = { ...appState, ...newState };
+            const classes = getSortedUniqueClasses(appState.players, CLASS_ORDER_MAP);
+            if (classes.length > 0 && !classes.includes(appState.ui.selectedClass)) {
+                appState.ui.selectedClass = classes[0];
+            }
+            renderAll(appState, dom, CLASS_ORDER_MAP, EVENTS);
+        });
+        socket.on('disconnect', () => {
+            if (dom.connectionStatus) { dom.connectionStatus.textContent = 'サーバーとの接続が切れました。再接続します...'; dom.connectionStatus.style.display = 'block'; }
+        });
+        socket.on('reconnecting', (attemptNumber) => {
+            if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
+        });
+    }
+
+    // --- 初期化処理 ---
     setupEventListeners();
     const socket = io({ transports: ['websocket', 'polling'] });
     setupSocketEventListeners(socket);
 });
 
-function setupSocketEventListeners(socket) {
-    socket.on('connect', () => {
-        console.log('サーバーに接続しました。');
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = ''; dom.connectionStatus.style.display = 'none'; }
-        socket.emit('requestInitialDataMen');
-    });
-    socket.on('stateUpdateMen', (newState) => {
-        console.log('State received from server');
-        appState.competitionName = newState.competitionName;
-        appState.lastUpdated = newState.lastUpdated;
-        appState.players = newState.players;
-        // ★★★ 修正点: データ受信時に表示すべきクラスを確実に設定する ★★★
-        const classes = getSortedUniqueClasses(appState.players);
-        // 現在選択中のクラスが新しいデータに存在しない、または何も選択されていない場合、リストの先頭のクラスを選択する
-        if (classes.length > 0 && !classes.includes(appState.ui.selectedClass)) {
-            appState.ui.selectedClass = classes[0];
-        }
-        renderAll();
-    });
-    socket.on('disconnect', () => {
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = 'サーバーとの接続が切れました。再接続します...'; dom.connectionStatus.style.display = 'block'; }
-    });
-    socket.on('reconnecting', (attemptNumber) => {
-        if (dom.connectionStatus) { dom.connectionStatus.textContent = `サーバーとの接続が切れました。再接続します... (${attemptNumber}回目)`; dom.connectionStatus.style.display = 'block'; }
-    });
+function renderAll(appState, dom, classOrder, events) {
+    renderTabsAndSelectors(appState, dom, classOrder);
+    renderTotalRanking(appState, dom);
+    renderEventRanking(appState, dom, events);
+    renderCompetitionName(appState, dom);
 }
 
-function renderAll() {
-    renderTabsAndSelectors();
-    renderTotalRanking();
-    renderEventRanking();
-    renderCompetitionName();
-}
-
-function renderCompetitionName() {
+function renderCompetitionName(appState, dom) {
     const competitionTitle = appState.competitionName || '大会結果速報 (男子)';
     dom.competitionName.textContent = competitionTitle;
     if (dom.lastUpdated) {
@@ -95,7 +89,7 @@ function renderCompetitionName() {
 }
 
 // 存在するユニークなクラス名を取得し、定義された順序でソートするヘルパー関数
-function getSortedUniqueClasses(players) {
+function getSortedUniqueClasses(players, CLASS_ORDER_MAP) {
     const uniqueClasses = [...new Set(players.map(p => p.playerClass))];
     return uniqueClasses.sort((a, b) => {
         const orderA = CLASS_ORDER_MAP[a] !== undefined ? CLASS_ORDER_MAP[a] : Infinity;
@@ -109,9 +103,9 @@ function getSortedUniqueClasses(players) {
     });
 }
 
-function renderTabsAndSelectors() {
+function renderTabsAndSelectors(appState, dom, classOrder) {
     const { selectedClass, rankingType } = appState.ui;
-    const classes = getSortedUniqueClasses(appState.players);
+    const classes = getSortedUniqueClasses(appState.players, classOrder);
 
     // クラス選択タブの動的生成
     dom.classTabs.innerHTML = '';
@@ -119,13 +113,6 @@ function renderTabsAndSelectors() {
         const isActive = (selectedClass === '' && index === 0) || selectedClass === playerClass;
         dom.classTabs.innerHTML += `<button data-class="${playerClass}" class="${isActive ? 'active' : ''}">${playerClass}クラス</button>`;
     });
-
-    // 選択されたクラスが現在のクラスリストにない場合、最初のクラスを選択
-    if (!classes.includes(selectedClass) && classes.length > 0) {
-        appState.ui.selectedClass = classes[0];
-    } else if (classes.length === 0) {
-        appState.ui.selectedClass = ''; // クラスがない場合はクリア
-    }
 
     // アクティブなタブを更新
     dom.classTabs.querySelectorAll('button').forEach(btn => {
@@ -138,7 +125,7 @@ function renderTabsAndSelectors() {
     dom.eventRankingSection.classList.toggle('active', !isTotal);
 }
 
-function renderTotalRanking() {
+function renderTotalRanking(appState, dom) {
     const selectedClass = appState.ui.selectedClass;
     const totalTableWrapper = dom.totalRankTableWrapper;
 
@@ -181,7 +168,7 @@ function renderTotalRanking() {
     tbody.innerHTML = rowsHtml;
 }
 
-function renderEventRanking() {
+function renderEventRanking(appState, dom, events) {
     const selectedClass = appState.ui.selectedClass;
     const rankingType = appState.ui.rankingType;
     const eventTableWrapper = dom.eventRankTableWrapper;
@@ -195,15 +182,7 @@ function renderEventRanking() {
     const classId = selectedClass.replace(/\s/g, '');
     const eventVal = rankingType;
 
-    const EVENT_NAMES = {
-        floor: '床',
-        pommel: 'あん馬',
-        rings: 'つり輪',
-        vault: '跳馬',
-        pbars: '平行棒',
-        hbar: '鉄棒'
-    };
-    const eventName = EVENT_NAMES[eventVal];
+    const eventName = events[eventVal];
 
     if (eventName) {
         eventTableWrapper.innerHTML = `
