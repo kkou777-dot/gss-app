@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.scheduleAutoSave === 'function') {
             window.scheduleAutoSave();
         }
-        socket.emit('viewerUpdateMen', { competitionName: appState.competitionName }); // 大会名の変更をサーバーに通知
+        socket.emit('viewerUpdateMen', { competitionName: appState.competitionName });
     });
 
     if (saveButton) saveButton.addEventListener('click', () => {

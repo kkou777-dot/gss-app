@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.scheduleAutoSave === 'function') {
             window.scheduleAutoSave();
         }
-        socket.emit('viewerUpdateWomen', { competitionName: appState.competitionName }); // 大会名の変更をサーバーに通知
+        socket.emit('viewerUpdateWomen', { competitionName: appState.competitionName });
     });
 
     // 保存ボタン
