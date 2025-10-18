@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (i > 0 && player.total < classPlayers[i - 1].total) rank = i + 1;
                     tableHTML += `<tr>
                         <td>${rank}</td>
-                        <td>${player.name}</td>
+                        <td class="player-name-cell">${player.name.replace(/ |　/g, '<br>')}</td>
                         <td>${player.playerGroup || ''}</td>
                         <td>${player.total.toFixed(3)}</td>
                         <td>
