@@ -715,6 +715,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirm(`本当に「${player.name}」さんを削除しますか？`)) {
                     // 1. 選手リストから該当選手を削除
                     appState.players = appState.players.filter(p => p.id !== playerId);
+                    // ★★★ 修正点: 削除時にも最終更新日時を付与する ★★★
+                    appState.lastUpdated = new Date().toLocaleTimeString();
                     // 2. サーバーに更新を通知
                     socket.emit('viewerUpdateWomen', appState); // これにより他のクライアントも更新される
                     e.target.closest('tr').remove(); // 画面から行を直接削除し、UI全体再描画を避ける
