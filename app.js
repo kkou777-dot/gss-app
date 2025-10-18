@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
 
     // 大会名入力
-    if (competitionNameInput) competitionNameInput.addEventListener('input', (e) => {
+    if (competitionNameInput) competitionNameInput.addEventListener('change', (e) => {
         appState.competitionName = e.target.value;
         if (competitionNameDisplay) competitionNameDisplay.textContent = appState.competitionName || '体操スコアシート (女子)';
         // scheduleAutoSaveは各HTMLで定義されている
