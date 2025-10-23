@@ -583,9 +583,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // サーバーに新しい状態を送信し、全クライアントを同期させる
                 socket.emit('viewerUpdateWomen', appState);
                 console.log('CSV parsed. newPlayers:', newPlayers);
+
                 // サーバーからのstateUpdateを待たずに、即時UIを更新する
-                updateAllUI(); 
-                alert(`${newPlayers.length}人の選手データを読み込みました。内容を確認し、問題なければ「スプレッドシートに保存」してください。`);
+                updateAllUI();
+
+                // 読み込み完了後、自動でサーバーに保存する
+                socket.emit('saveData', { gender: GENDER }, (response) => {
+                    if (response.success) {
+                        alert(`${newPlayers.length}人の選手データを読み込み、サーバーに保存しました。`);
+                        if (saveStatus) saveStatus.textContent = `自動保存完了 (${new Date().toLocaleTimeString()})`;
+                    } else {
+                        alert(`選手データの読み込みには成功しましたが、サーバーへの自動保存に失敗しました。\nエラー: ${response.message}\n手動で「スプレッドシートに保存」ボタンを押してください。`);
+                    }
+                });
             } catch (error) {
                 alert('CSVファイルの読み込みに失敗しました。形式を確認してください。');
                 console.error(error);

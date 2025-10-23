@@ -49,5 +49,15 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="app_men.js"></script>
+    <script>
+        // 編集ボタンから遷移してきた場合に、URLパラメータから組を復元する
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const group = urlParams.get('group');
+            if (group) {
+                document.getElementById('inputGroupSelect').value = group;
+            }
+        });
+    </script>
 </body>
 </html>
