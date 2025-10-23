@@ -837,8 +837,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetClass && targetGroup) {
         const classSelect = document.getElementById('inputClassSelect');
         const groupSelect = document.getElementById('inputGroupSelect');
-        if (classSelect) classSelect.value = targetClass;
-        // updateInputAreaが呼ばれるのを待ってから組を設定
-        setTimeout(() => { if (groupSelect) groupSelect.value = targetGroup; updateInputArea(); }, 100);
+        if (classSelect && groupSelect) {
+            classSelect.value = targetClass;
+            // updateInputAreaが呼ばれる前に、選択すべき組の値を設定しておく
+            groupSelect.value = targetGroup;
+            // サーバーからデータが読み込まれるのを待ってからUIを更新
+            setTimeout(updateInputArea, 100);
+        }
     }
 });
