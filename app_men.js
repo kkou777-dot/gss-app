@@ -208,9 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const groupSelect = document.getElementById('inputGroupSelect');
         const playersArea = document.getElementById('inputPlayersArea');
 
-        const previouslySelectedClass = classSelect.value; // 以前選択されていたクラスを保持
-        // 現在選択されている組を保持
-        const previouslySelectedGroup = groupSelect.value;
+        // URLパラメータから渡されたクラス/組があれば、それを優先する
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlClass = urlParams.get('class');
+        const urlGroup = urlParams.get('group');
+
+        const previouslySelectedClass = urlClass || classSelect.value; // URLパラメータがあれば優先、なければ現在の選択値
+        const previouslySelectedGroup = urlGroup || groupSelect.value; // URLパラメータがあれば優先、なければ現在の選択値
 
         // クラス選択ボックスの更新
         const classes = getSortedUniqueClasses(appState.players);
@@ -794,14 +798,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetClass = urlParams.get('class');
     const targetGroup = urlParams.get('group');
     if (targetClass && targetGroup) {
-        const classSelect = document.getElementById('inputClassSelect');
-        const groupSelect = document.getElementById('inputGroupSelect');
-        if (classSelect && groupSelect) {
-            classSelect.value = targetClass;
-            // updateInputAreaが呼ばれる前に、選択すべき組の値を設定しておく
-            groupSelect.value = targetGroup;
-            // サーバーからデータが読み込まれるのを待ってからUIを更新
-            setTimeout(updateInputArea, 100);
-        }
+        // サーバーからデータが読み込まれ、UIが更新されるのを少し待ってから
+        // updateInputAreaを再度呼び出すことで、URLパラメータの値を確実に反映させる。
+        // stateUpdate -> updateAllUI -> updateInputArea の後に実行されることを期待。
+        setTimeout(() => {
+            updateInputArea();
+        }, 200); // サーバーからのデータ受信を待つため少し長めに設定
     }
 });
